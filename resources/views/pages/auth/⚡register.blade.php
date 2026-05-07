@@ -3,7 +3,7 @@
 use Livewire\Component;
 use Livewire\Layout;
 use Livewire\Attributes\Validate;
-use App\Models\Anggota;
+use App\Models\User;
 
 new #[Layout('layouts.app')] class extends Component
 {
@@ -11,7 +11,7 @@ new #[Layout('layouts.app')] class extends Component
 
     #[Validate('required', message: 'NPK harus diisi')]
     #[Validate('min:3', message: 'NPK minimal 3 karakter')]
-    #[Validate('unique:anggotas,npk', message: 'NPK sudah pernah didaftarkan!')]
+    #[Validate('unique:users,username', message: 'NPK sudah pernah didaftarkan!')]
     public $npk;
 
     #[Validate('required', message: 'Nama lengkap wajib diisi')]
@@ -76,7 +76,53 @@ new #[Layout('layouts.app')] class extends Component
         }
         unset($validated['persetujuan']);
 
-        Anggota::create($validated);
+        // $defaultPassword = bcrypt($this->npk . '@' . rand(1000, 9999)); 
+        $defaultPassword = bcrypt($this->npk . '@1234'); 
+
+        $userData = [
+            // Data akun
+            'username' => $this->npk,
+            'email' => $this->email,
+            'password' => $defaultPassword,
+
+            // Data pribadi
+            'nama_anggota' => $this->nama_lengkap,
+            'gender' => $this->jenis_kelamin,
+            'tanggal_lahir' => $this->tanggal_lahir,
+            'ext_tempat_lahir' => $this->tempat_lahir,
+            'ext_alamat' => $this->alamat,
+            'ext_pendidikan_terakhir' => $this->pendidikan_terakhir,
+            'no_telp' => $this->no_whatsapp,
+
+            // Data keanggotaan
+            'join_astra' => null,
+            'join_date' => null,
+            'employement_status' => null,
+            'grade_category' => null,
+            'seksi' => null,
+            'status_user' => 2,
+            'level_user' => 1,
+
+            // Data rekening
+            'nama_bank' => $this->jenis_bank,
+            'no_rekening' => $this->no_rekening,
+            'pemilik_no_rekening' => null,
+
+            // Data ahli waris
+            'ext_nama_ahli_waris' => $this->nama_ahli_waris,
+            'ext_hubungan_ahli_waris' => $this->hubungan_ahli_waris,
+            'ext_hubungan_lainnya' => $this->hubungan_lainnya,
+
+            // Status aplikasi tambahan
+            'ext_is_approved' => false,
+
+            // Sistem Laravel
+            'email_verified_at' => null,
+            // Timestamp
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+        User::create($userData);
 
         session()->flash('status', 'Pendaftaran berhasil dikirim!');
         
@@ -233,7 +279,6 @@ new #[Layout('layouts.app')] class extends Component
                             </div>
                         </flux:checkbox>
                     </flux:checkbox.group>
-                    <flux:error name="persetujuan" />
                 </flux:field>
             </div>
 

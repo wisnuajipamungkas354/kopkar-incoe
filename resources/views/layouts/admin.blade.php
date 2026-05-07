@@ -17,13 +17,13 @@
             <flux:sidebar.header>
                 <flux:sidebar.brand
                     href="#"
-                    logo="{{ asset('img/kki-icon-light.png') }}"
-                    logo:dark="{{ asset('img/kki-icon-dark.png') }}"
+                    logo="{{ asset('img/kki-icon-2-light.png') }}"
+                    logo:dark="{{ asset('img/kki-icon-2-dark.png') }}"
                 />
                 <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
             </flux:sidebar.header>
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="home" href="#" current>Home</flux:sidebar.item>
+                <flux:sidebar.item icon="home" href="#" current>Dashboard</flux:sidebar.item>
                 <flux:sidebar.item icon="inbox" badge="12" href="#">Anggota</flux:sidebar.item>
                 <flux:sidebar.item icon="document-text" href="#">PPOB</flux:sidebar.item>
                 <flux:sidebar.item icon="calendar" href="#">Calendar</flux:sidebar.item>

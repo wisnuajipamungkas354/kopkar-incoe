@@ -40,7 +40,7 @@ new class extends Component
                 <div class="space-y-1">
                     <flux:heading size="sm">Langkah Selanjutnya:</flux:heading>
                     <flux:text size="sm">
-                        Kami akan menghubungi Anda melalui nomor <b>WhatsApp</b> yang telah didaftarkan untuk proses administrasi lebih lanjut.
+                        Kami akan menghubungi Anda melalui <b>Email</b> yang telah didaftarkan untuk proses administrasi lebih lanjut.
                     </flux:text>
                 </div>
             </div>
