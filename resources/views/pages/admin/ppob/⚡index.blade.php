@@ -10,7 +10,7 @@ new #[Layout('layouts::admin')] class extends Component
 ?>
 
 <div>
-    <flux:heading size="xl" level="1">Selamat Datang, Nama</flux:heading>
-    <flux:text class="mt-2 mb-6 text-base">Berikut data terbaru hari ini</flux:text>
+    <flux:heading size="xl" level="1">PPOB</flux:heading>
+    <flux:text class="mt-2 mb-6 text-base">List Riwayat PPOB</flux:text>
     <flux:separator variant="subtle" />
 </div>

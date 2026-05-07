@@ -23,10 +23,9 @@
                 <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
             </flux:sidebar.header>
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="home" href="#" current>Dashboard</flux:sidebar.item>
-                <flux:sidebar.item icon="inbox" badge="12" href="#">Anggota</flux:sidebar.item>
-                <flux:sidebar.item icon="document-text" href="#">PPOB</flux:sidebar.item>
-                <flux:sidebar.item icon="calendar" href="#">Calendar</flux:sidebar.item>
+                <flux:sidebar.item icon="home" href="{{ url('/admin') }}" wire:navigate>Dashboard</flux:sidebar.item>
+                <flux:sidebar.item icon="inbox" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate>Anggota</flux:sidebar.item>
+                <flux:sidebar.item icon="document-text" href="{{ url('/admin/ppob') }}" wire:navigate>PPOB</flux:sidebar.item>
                 <flux:sidebar.group expandable icon="star" heading="Simpanan" class="grid">
                     <flux:sidebar.item href="#">Pokok</flux:sidebar.item>
                     <flux:sidebar.item href="#">Wajib</flux:sidebar.item>
