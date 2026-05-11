@@ -7,7 +7,7 @@ use App\Models\User;
 
 new #[Layout('layouts.app')] class extends Component
 {
-    public array $banks = ['BCA', 'Mandiri', 'BSI', 'Bank Jago', 'OVO', 'Gopay', 'ShopeePay'];
+    public array $banks = ['BCA', 'BRI', 'BNI', 'BSI', 'BJB', 'BTN', 'Mandiri', 'Bank DKI', 'Bank Muamalat', 'Seabank', 'Permata', ''];
 
     #[Validate('required', message: 'NPK harus diisi')]
     #[Validate('min:3', message: 'NPK minimal 3 karakter')]
@@ -194,6 +194,7 @@ new #[Layout('layouts.app')] class extends Component
                     <flux:select wire:model.live="pendidikan_terakhir" placeholder="Pilih Pendidikan">
                         <flux:select.option value="SMP">SMP</flux:select.option>
                         <flux:select.option value="SMA/K">SMA/K</flux:select.option>
+                        <flux:select.option value="D3">D3</flux:select.option>
                         <flux:select.option value="S1">S1/D4</flux:select.option>
                         <flux:select.option value="S2">S2</flux:select.option>
                         <flux:select.option value="S3">S3</flux:select.option>
@@ -286,7 +287,7 @@ new #[Layout('layouts.app')] class extends Component
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
                 <flux:heading size="sm" class="text-blue-800 dark:text-blue-400 mb-2">Catatan Penting:</flux:heading>
                 <ul class="list-disc list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                    <li>Simpanan Pokok dapat disetor langsung ke Koperasi Karyawan Incoe (KKI).</li>
+                    <li>Simpanan Pokok dan Simpanan Wajib, dipotong langsung melalui Payroll CBI bulan berikutnya.</li>
                     <li>Semua data wajib diisi dengan lengkap dan benar untuk memudahkan akses transaksi.</li>
                 </ul>
             </div>

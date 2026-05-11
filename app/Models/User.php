@@ -70,4 +70,19 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // protected static function boot()
+    // {
+    //     static::creating(function ($user) {
+    //         $user->nama_anggota = strtoupper($user->nama_anggota);
+    //         $user->ext_tempat_lahir = strtoupper($user->ext_tempat_lahir);
+    //         $user->ext_nama_ahli_waris = strtoupper($user->ext_nama_ahli_waris);
+    //     });
+
+    //     static::updating(function ($user) {
+    //         $user->nama_anggota = strtoupper($user->nama_anggota);
+    //         $user->ext_tempat_lahir = strtoupper($user->ext_tempat_lahir);
+    //         $user->ext_nama_ahli_waris = strtoupper($user->ext_nama_ahli_waris);
+    //     });
+    // }
 }
