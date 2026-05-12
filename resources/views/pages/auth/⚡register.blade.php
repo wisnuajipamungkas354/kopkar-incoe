@@ -46,6 +46,9 @@ new #[Layout('layouts.app')] class extends Component
     #[Validate('numeric', message: 'Nomor rekening harus berupa angka')]
     public $no_rekening;
 
+    #[Validate('required', message: 'Nama pemilik rekening wajib diisi')]
+    public $nama_pemilik_rekening;
+
     #[Validate('required', message: 'Nama ahli waris wajib diisi')]
     public $nama_ahli_waris;
 
@@ -238,7 +241,11 @@ new #[Layout('layouts.app')] class extends Component
                     <flux:input wire:model="no_rekening" placeholder="Contoh: 1234567890" />
                     <flux:error name="no_rekening" />
                 </flux:field>
-
+                <flux:field>
+                    <flux:label>Nama Pemilik Rekening</flux:label>
+                    <flux:input type="tel" wire:model="nama_pemilik_rekening" placeholder="Masukan nama pemilik rekening" />
+                    <flux:error name="nama_pemilik_rekening" />
+                </flux:field>
                 <flux:field>
                     <flux:label>Nama Ahli Waris</flux:label>
                     <flux:input wire:model="nama_ahli_waris" placeholder="Nama lengkap ahli waris" />

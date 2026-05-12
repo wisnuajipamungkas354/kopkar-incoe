@@ -34,7 +34,7 @@
           <flux:brand href="#" logo="{{ asset('img/kki-icon-2-light.png') }}" class="max-lg:hidden dark:hidden" />
           <flux:brand href="#" logo="{{ asset('img/kki-icon-2-dark.png') }}" class="max-lg:hidden! hidden dark:flex" />
           <flux:navbar class="-mb-px max-lg:hidden">
-              <flux:navbar.item icon="home" href="#" current>Home</flux:navbar.item>
+              <flux:navbar.item icon="home" href="{{ url('anggota') }}" wire:navigate current>Home</flux:navbar.item>
               <flux:separator vertical variant="subtle" class="my-2"/>
               <flux:dropdown class="max-lg:hidden">
                   <flux:navbar.item icon="wallet" icon:trailing="chevron-down">Simpanan</flux:navbar.item>
