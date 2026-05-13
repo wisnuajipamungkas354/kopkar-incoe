@@ -4,14 +4,23 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
+use Midtrans\Config;
+use Midtrans\CoreApi;
 
-new #[Layout('layouts::anggota')] class extends Component
+new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extends Component
 {
     use WithPagination;
 
     public $search = '';
-    public $metodePembayaran = 'qris';
     public $nominalBaru = '';
+    public $additionalSetoran = '';
+    public $qrImage = '';
+
+    public function submitTarikTunai()
+    {
+        // Dummy logic submission
+        $this->reset(['nominalTarik', 'keteranganTarik']);
+    }
 
     public function submitUbahSetoran()
     {
@@ -49,6 +58,30 @@ new #[Layout('layouts::anggota')] class extends Component
     {
         return 1;
     }
+
+    public function generatePayment()
+    {
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$isProduction = config('midtrans.is_production');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+
+        $createPayment = [
+            'transaction_details' => array(
+                'order_id' => rand(),
+                'gross_amount' => (float) $this->additionalSetoran
+            ),
+            'customer_details' => array(
+                'user_id' => 1,
+                'name' => 'Wisnu Aji Pamungkas',
+                'email' => 'wisnuajipamungkas@gmail.com'
+            ),
+            'payment_type' => 'qris',
+        ];
+
+        $response = CoreApi::charge($createPayment);
+        dd($response->actions[0]->url);
+    }
 };
 ?>
 
@@ -62,7 +95,6 @@ new #[Layout('layouts::anggota')] class extends Component
             <flux:modal.trigger name="ubah-setoran">
                 <flux:button size="sm" variant="outline" icon="pencil-square">Ubah Setoran</flux:button>
             </flux:modal.trigger>
-            <flux:button size="sm" variant="primary" icon="banknotes">Tarik Tunai</flux:button>
         </div>
     </div>
     <flux:separator variant="subtle" />
@@ -152,41 +184,34 @@ new #[Layout('layouts::anggota')] class extends Component
 
     <div class="mt-8">
         <div class="mb-4">
-            <flux:heading size="lg" level="2">Pengajuan Simpanan Tambahan</flux:heading>
-            <flux:text class="mt-1 text-base">Ajukan setoran simpanan sukarela tambahan (sekali transfer/insidental) di luar setoran rutin.</flux:text>
+            <flux:heading size="lg" level="2">Setor Simpanan Tambahan</flux:heading>
+            <flux:text class="mt-1 text-base">Setor simpanan sukarela tambahan (sekali transfer/insidental) di luar setoran rutin.</flux:text>
         </div>
         
-        <flux:card>
-            <form class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <flux:card class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <div class="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50 text-sm text-purple-700 dark:text-purple-300 flex items-start gap-3">
+                    <flux:icon name="qr-code" class="w-5 h-5 mt-0.5 shrink-0" />
+                    <div>
+                        <span class="font-semibold">Otomatis via QRIS:</span> Pembayaran instan tanpa perlu unggah bukti transfer. Kode QRIS akan muncul setelah Anda klik tombol bayar di bawah.
+                    </div>
+                    <div>
+                        <img src="{{ $qrImage }}" />
+                    </div>
+                </div>
+            </div>
+            <form class="" wire:submit.prevent="generatePayment">
                 <div class="flex flex-col gap-4">
-                    <flux:input label="Nominal Setoran (Rp)" placeholder="Contoh: 500000" type="number" />
-                    <flux:select wire:model.live="metodePembayaran" label="Metode Pembayaran">
-                        <option value="qris">QRIS (Otomatis & Tanpa Upload Bukti)</option>
-                        <option value="transfer_mandiri">Transfer Bank Mandiri</option>
-                        <option value="transfer_bca">Transfer Bank BCA</option>
-                    </flux:select>
+                    <flux:input wire:model.live="additionalSetoran" label="Nominal Setoran (Rp)" placeholder="Contoh: 500000" type="number" />
+                    
                 </div>
                 
                 <div class="flex flex-col gap-4">
-                    @if($metodePembayaran !== 'qris')
-                        <flux:input type="file" label="Bukti Transfer" description="Format: JPG, PNG, atau PDF. Maks. 2MB" />
-                    @else
-                        <div class="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50 text-sm text-purple-700 dark:text-purple-300 flex items-start gap-3">
-                            <flux:icon name="qr-code" class="w-5 h-5 mt-0.5 shrink-0" />
-                            <div>
-                                <span class="font-semibold">Pembayaran via QRIS:</span> Transaksi diverifikasi otomatis. Kode QRIS akan ditampilkan setelah Anda menekan tombol di bawah.
-                            </div>
-                        </div>
-                    @endif
-                    <flux:textarea label="Keterangan (Opsional)" placeholder="Tambahkan catatan jika ada..." rows="2" />
+                    <flux:textarea label="Keterangan (Opsional)" placeholder="Tambahkan catatan jika ada..." rows="6" />
                 </div>
                 
                 <div class="md:col-span-2 flex justify-end mt-2">
-                    @if($metodePembayaran === 'qris')
-                        <flux:button variant="primary" icon="qr-code">Bayar via QRIS</flux:button>
-                    @else
-                        <flux:button variant="primary" icon="paper-airplane">Kirim Pengajuan</flux:button>
-                    @endif
+                    <flux:button type="submit" variant="primary" icon="qr-code">Bayar via QRIS</flux:button>
                 </div>
             </form>
         </flux:card>

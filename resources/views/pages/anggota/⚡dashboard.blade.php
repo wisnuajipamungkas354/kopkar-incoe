@@ -21,6 +21,13 @@ new #[Layout('layouts::anggota')] class extends Component
     }
 
     #[Computed]
+    public function totalSimpananLainnya()
+    {
+        // Dummy data, ganti dengan query aktual ke database nantinya
+        return 250000;
+    }
+
+    #[Computed]
     public function pinjamanAktif()
     {
         // Dummy data, ganti dengan query aktual ke database nantinya
@@ -47,7 +54,7 @@ new #[Layout('layouts::anggota')] class extends Component
                 <flux:icon name="wallet" class="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-                <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Simpanan Wajib</flux:text>
+                <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Simpanan</flux:text>
                 <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->totalSimpananWajib, 0, ',', '.') }}</flux:heading>
             </div>
         </flux:card>
@@ -59,6 +66,16 @@ new #[Layout('layouts::anggota')] class extends Component
             <div>
                 <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Saldo Simpanan Sukarela</flux:text>
                 <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->totalSimpananSukarela, 0, ',', '.') }}</flux:heading>
+            </div>
+        </flux:card>
+
+        <flux:card class="flex items-center gap-4">
+            <div class="p-3 bg-green-100 dark:bg-green-900/40 rounded-xl">
+                <flux:icon name="ticket" class="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+                <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">SHU & Simpanan Lain</flux:text>
+                <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->totalSimpananLainnya, 0, ',', '.') }}</flux:heading>
             </div>
         </flux:card>
 

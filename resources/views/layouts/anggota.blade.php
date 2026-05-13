@@ -35,7 +35,6 @@
           <flux:brand href="#" logo="{{ asset('img/kki-icon-2-dark.png') }}" class="max-lg:hidden! hidden dark:flex" />
           <flux:navbar class="-mb-px max-lg:hidden">
               <flux:navbar.item icon="home" href="{{ url('anggota') }}" wire:navigate current>Home</flux:navbar.item>
-              <flux:separator vertical variant="subtle" class="my-2"/>
               <flux:dropdown class="max-lg:hidden">
                   <flux:navbar.item icon="wallet" icon:trailing="chevron-down">Simpanan</flux:navbar.item>
                   <flux:navmenu>
@@ -44,10 +43,12 @@
                       <flux:navmenu.item href="{{ url('anggota/simpanan-sukarela') }}" wire:navigate>Sukarela</flux:navmenu.item>
                   </flux:navmenu>
               </flux:dropdown>
+              <flux:separator vertical variant="subtle" class="my-2"/>
               <flux:dropdown class="max-lg:hidden">
                   <flux:navbar.item icon="document-text" icon:trailing="chevron-down">Pengajuan</flux:navbar.item>
                   <flux:navmenu>
                       <flux:navmenu.item href="#">Pembiayaan & Pinjaman</flux:navmenu.item>
+                      <flux:navmenu.item href="#">Tarik Saldo</flux:navmenu.item>
                       <flux:navmenu.item href="#">PPOB</flux:navmenu.item>
                       <flux:navmenu.item href="#">Lazis</flux:navmenu.item>
                   </flux:navmenu>
@@ -55,9 +56,6 @@
           </flux:navbar>
           <flux:spacer />
           <flux:navbar class="me-4">
-              <flux:navbar.item icon="magnifying-glass" href="#" label="Search" />
-              <flux:navbar.item class="max-lg:hidden" icon="cog-6-tooth" href="#" label="Settings" />
-              <flux:navbar.item class="max-lg:hidden" icon="information-circle" href="#" label="Help" />
               <flux:button variant="subtle" size="sm" x-data x-on:click="$flux.dark = ! $flux.dark" class="rounded-full !px-2" tabindex="-1">
                 <flux:icon.sun x-show="$flux.appearance === 'light'" variant="mini" class="text-zinc-500 dark:text-white" />
                 <flux:icon.moon x-show="$flux.appearance === 'dark'" variant="mini" class="text-zinc-500 dark:text-white" />
@@ -93,6 +91,7 @@
               </flux:sidebar.group>
               <flux:sidebar.group expandable heading="Pengajuan" class="grid">
                   <flux:sidebar.item href="#">Pembiayaan & Pinjaman</flux:sidebar.item>
+                  <flux:navmenu.item href="#">Tarik Saldo</flux:navmenu.item>
                   <flux:sidebar.item href="#">PPOB</flux:sidebar.item>
                   <flux:sidebar.item href="#">Lazis</flux:sidebar.item>
               </flux:sidebar.group>
