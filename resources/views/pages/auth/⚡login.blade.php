@@ -54,7 +54,11 @@ new #[Layout('layouts::app')] class extends Component
         Session::regenerate();
 
         // Redirect sesuai kebutuhan
-        return redirect()->intended('admin/');
+        if (!in_array($user->level_user, [0, 1])) {
+            return redirect()->intended('admin/');
+        }
+
+        return redirect()->intended('anggota/');
     }
 };
 ?>

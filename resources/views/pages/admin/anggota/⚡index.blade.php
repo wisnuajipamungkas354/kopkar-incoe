@@ -14,7 +14,7 @@ new #[Layout('layouts::admin')] class extends Component
     #[Computed]
     public function anggota()
     {
-        return User::paginate($this->perPage);
+        return User::where('status_user', 1)->where('ext_is_approved', true)->paginate($this->perPage);
     }
 };
 ?>

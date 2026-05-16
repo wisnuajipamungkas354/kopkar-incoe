@@ -4,6 +4,8 @@ use Livewire\Component;
 use Livewire\Layout;
 use Livewire\Attributes\Validate;
 use App\Models\User;
+use Livewire\Attributes\On; 
+use Carbon\Carbon;
 
 new #[Layout('layouts.app')] class extends Component
 {
@@ -11,7 +13,6 @@ new #[Layout('layouts.app')] class extends Component
 
     #[Validate('required', message: 'NPK harus diisi')]
     #[Validate('min:3', message: 'NPK minimal 3 karakter')]
-    #[Validate('unique:users,username', message: 'NPK sudah pernah didaftarkan!')]
     public $npk;
 
     #[Validate('required', message: 'Nama lengkap wajib diisi')]
@@ -67,29 +68,55 @@ new #[Layout('layouts.app')] class extends Component
     #[Validate('min:1', message: 'Anda harus menyetujui persyaratan untuk melanjutkan')]
     public $persetujuan = [];
 
+    public function updatedNpk()
+    {
+        $isExists = User::where('username', $this->npk)->first();
+        
+        if($isExists) {
+            if($isExists->status_user == 0 || $isExists->status_user == 2) {
+                $this->nama_lengkap = $isExists->nama_anggota;
+                $this->tanggal_lahir = $isExists->tanggal_lahir;
+                $this->resetValidation('npk');
+            } else {
+                $this->nama_lengkap = null;
+                $this->tanggal_lahir = null;
+                $this->addError('npk', 'NPK sudah pernah didaftarkan!');
+            }
+        } else {
+            $this->nama_lengkap = null;
+            $this->tanggal_lahir = null;
+            $this->resetValidation('npk');
+        }
+    }
+
+    public function updatedTanggalLahir()
+    {
+        $umur = Carbon::parse($this->tanggal_lahir)->age;
+        if($umur < 18) {
+            $this->addError('tanggal_lahir', 'Umur minimal 18 tahun!');
+        }
+    }
+
     public function register()
     {
-        // Melakukan validasi semua properti yang memiliki atribut #[Validate]
         $validated = $this->validate();
 
-        // Tambahan logika bisnis: memastikan 'setuju' ada dalam array persetujuan
         if (!in_array('setuju', $this->persetujuan)) {
             $this->addError('persetujuan', 'Konfirmasi kesediaan wajib dicentang.');
             return;
         }
         unset($validated['persetujuan']);
 
+        $user = User::where('username', $this->npk)->first();
+
         // $defaultPassword = bcrypt($this->npk . '@' . rand(1000, 9999)); 
         $defaultPassword = bcrypt($this->npk . '@1234'); 
 
-        $userData = [
+        $updateUserData = [
             // Data akun
-            'username' => $this->npk,
-            'email' => $this->email,
             'password' => $defaultPassword,
 
             // Data pribadi
-            'nama_anggota' => $this->nama_lengkap,
             'gender' => $this->jenis_kelamin,
             'tanggal_lahir' => $this->tanggal_lahir,
             'ext_tempat_lahir' => $this->tempat_lahir,
@@ -98,18 +125,12 @@ new #[Layout('layouts.app')] class extends Component
             'no_telp' => $this->no_whatsapp,
 
             // Data keanggotaan
-            'join_astra' => null,
-            'join_date' => null,
-            'employement_status' => null,
-            'grade_category' => null,
-            'seksi' => null,
-            'status_user' => 2,
             'level_user' => 1,
 
             // Data rekening
             'nama_bank' => $this->jenis_bank,
             'no_rekening' => $this->no_rekening,
-            'pemilik_no_rekening' => null,
+            'pemilik_no_rekening' => $this->nama_pemilik_rekening,
 
             // Data ahli waris
             'ext_nama_ahli_waris' => $this->nama_ahli_waris,
@@ -119,13 +140,11 @@ new #[Layout('layouts.app')] class extends Component
             // Status aplikasi tambahan
             'ext_is_approved' => false,
 
-            // Sistem Laravel
-            'email_verified_at' => null,
-            // Timestamp
-            'created_at' => now(),
             'updated_at' => now(),
         ];
-        User::create($userData);
+
+        $user->fill($updateUserData);
+        $user->save();
 
         session()->flash('status', 'Pendaftaran berhasil dikirim!');
         
@@ -188,7 +207,7 @@ new #[Layout('layouts.app')] class extends Component
 
                 <flux:field>
                     <flux:label>Tanggal Lahir</flux:label>
-                    <flux:input type="date" wire:model="tanggal_lahir" />
+                    <flux:input type="date" wire:model.live="tanggal_lahir" />
                     <flux:error name="tanggal_lahir" />
                 </flux:field>
 

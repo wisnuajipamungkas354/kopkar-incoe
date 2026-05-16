@@ -39,13 +39,27 @@
                 <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
             </flux:sidebar.header>
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="home" href="{{ url('/admin') }}" wire:navigate>Dashboard</flux:sidebar.item>
-                <flux:sidebar.item icon="inbox" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate>Anggota</flux:sidebar.item>
-                <flux:sidebar.item icon="document-text" href="{{ url('/admin/ppob') }}" wire:navigate>PPOB</flux:sidebar.item>
-                <flux:sidebar.group expandable icon="star" heading="Simpanan" class="grid">
-                    <flux:sidebar.item href="#">Pokok</flux:sidebar.item>
-                    <flux:sidebar.item href="#">Wajib</flux:sidebar.item>
-                    <flux:sidebar.item href="#">Sukarela</flux:sidebar.item>
+                <flux:sidebar.item icon="home" href="{{ url('/admin') }}" wire:navigate :current="request()->is('admin')">Dashboard</flux:sidebar.item>
+                
+                <flux:sidebar.item icon="users" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate :current="request()->is('admin/anggota')">Data Anggota</flux:sidebar.item>
+                
+                <flux:sidebar.group expandable icon="wallet" heading="Dompet" class="grid">
+                    <flux:sidebar.item href="{{ url('/admin/simpanan-sukarela') }}" wire:navigate :current="request()->is('admin/simpanan-sukarela')">Simpanan Sukarela</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ url('/admin/tarik-saldo') }}" wire:navigate :current="request()->is('admin/tarik-saldo')">Tarik Saldo</flux:sidebar.item>
+                </flux:sidebar.group>
+
+                <flux:sidebar.item icon="banknotes" href="{{ url('/admin/pembiayaan-pinjaman') }}" wire:navigate :current="request()->is('admin/pembiayaan-pinjaman') || request()->is('admin/pembiayaan-pinjaman/*')">Pinjaman</flux:sidebar.item>
+
+                <flux:sidebar.group expandable icon="qr-code" heading="Pembayaran" class="grid">
+                    <flux:sidebar.item href="{{ url('/admin/ppob') }}" wire:navigate :current="request()->is('admin/ppob')">PPOB</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ url('/admin/lazis') }}" wire:navigate :current="request()->is('admin/lazis')">Lazis</flux:sidebar.item>
+                </flux:sidebar.group>
+                
+                <flux:sidebar.group expandable icon="document-check" heading="Persetujuan" class="grid">
+                    <flux:sidebar.item href="#">Pengajuan Pinjaman</flux:sidebar.item>
+                    <flux:sidebar.item href="#">Pengajuan Penarikan</flux:sidebar.item>
+                    <flux:sidebar.item href="#">Pengajuan Perubahan SS</flux:sidebar.item>
+                    <flux:sidebar.item href="{{ url('admin/persetujuan/registrasi-anggota') }}">Pendaftaran Anggota</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
             <flux:sidebar.spacer />
