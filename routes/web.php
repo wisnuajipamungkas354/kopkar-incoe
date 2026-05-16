@@ -18,6 +18,7 @@ Route::livewire('anggota/simpanan-wajib', 'pages::anggota.simpanan.wajib.index')
 Route::livewire('anggota/simpanan-sukarela', 'pages::anggota.simpanan.sukarela.index');
 Route::livewire('anggota/tarik-saldo', 'pages::anggota.simpanan.tarik-saldo.index');
 Route::livewire('anggota/lazis', 'pages::anggota.pembayaran.lazis.index');
+Route::livewire('anggota/ppob', 'pages::anggota.pembayaran.ppob.index');
 Route::livewire('anggota/pembiayaan-pinjaman', 'pages::anggota.simpanan.pembiayaan-pinjaman.index');
 Route::livewire('anggota/pembiayaan-pinjaman/pengajuan', 'pages::anggota.simpanan.pembiayaan-pinjaman.pengajuan');
 
