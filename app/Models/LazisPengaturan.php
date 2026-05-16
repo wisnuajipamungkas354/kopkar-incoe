@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class SavingTransaction extends Model
+class LazisPengaturan extends Model
 {
-    protected $guarded = ['id'];
+    //
 }

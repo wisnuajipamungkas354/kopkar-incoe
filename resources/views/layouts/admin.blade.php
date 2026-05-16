@@ -54,14 +54,11 @@
                 <flux:sidebar.item icon="information-circle" href="#">Help</flux:sidebar.item>
             </flux:sidebar.nav>
             <flux:dropdown position="top" align="start" class="max-lg:hidden">
-                <flux:sidebar.profile avatar="https://fluxui.dev/img/demo/user.png" name="Olivia Martin" />
+                <flux:sidebar.profile avatar="https://fluxui.dev/img/demo/user.png" name="{{ auth()->user()->name ?? 'Administrator' }}" />
                 <flux:menu>
-                    <flux:menu.radio.group>
-                        <flux:menu.radio checked>Olivia Martin</flux:menu.radio>
-                        <flux:menu.radio>Truly Delta</flux:menu.radio>
-                    </flux:menu.radio.group>
+                    <flux:menu.item icon="user" class="font-semibold">{{ auth()->user()->name ?? 'Administrator' }}</flux:menu.item>
                     <flux:menu.separator />
-                    <flux:menu.item icon="arrow-right-start-on-rectangle">Logout</flux:menu.item>
+                    <flux:menu.item icon="arrow-right-start-on-rectangle" href="{{ url('/logout') }}">Logout</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
         </flux:sidebar>
@@ -71,12 +68,9 @@
             <flux:dropdown position="top" align="start">
                 <flux:profile avatar="/img/demo/user.png" />
                 <flux:menu>
-                    <flux:menu.radio.group>
-                        <flux:menu.radio checked>Olivia Martin</flux:menu.radio>
-                        <flux:menu.radio>Truly Delta</flux:menu.radio>
-                    </flux:menu.radio.group>
+                    <flux:menu.item icon="user" class="font-semibold">{{ auth()->user()->name ?? 'Administrator' }}</flux:menu.item>
                     <flux:menu.separator />
-                    <flux:menu.item icon="arrow-right-start-on-rectangle">Logout</flux:menu.item>
+                    <flux:menu.item icon="arrow-right-start-on-rectangle" href="{{ url('/logout') }}">Logout</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
         </flux:header>

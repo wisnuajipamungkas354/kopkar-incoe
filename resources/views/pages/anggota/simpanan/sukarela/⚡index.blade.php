@@ -80,7 +80,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
         ];
 
         $response = CoreApi::charge($createPayment);
-        dd($response->actions[0]->url);
+        $this->dispatch('payment-created', qrImage: $response->actions[0]->url);
     }
 };
 ?>
@@ -189,36 +189,21 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
         </div>
         
         <flux:card class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <div class="p-4 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/50 text-sm text-purple-700 dark:text-purple-300 flex items-start gap-3">
-                    <flux:icon name="qr-code" class="w-5 h-5 mt-0.5 shrink-0" />
-                    <div>
-                        <span class="font-semibold">Otomatis via QRIS:</span> Pembayaran instan tanpa perlu unggah bukti transfer. Kode QRIS akan muncul setelah Anda klik tombol bayar di bawah.
-                    </div>
-                    <div>
-                        <img src="{{ $qrImage }}" />
-                    </div>
-                </div>
-            </div>
-            <form class="" wire:submit.prevent="generatePayment">
+            <form class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end" wire:submit.prevent="generatePayment">
                 <div class="flex flex-col gap-4">
-                    <flux:input wire:model.live="additionalSetoran" label="Nominal Setoran (Rp)" placeholder="Contoh: 500000" type="number" />
-                    
+                    <flux:input wire:model.live="additionalSetoran" label="Nominal Setoran (Rp)" min="50000" placeholder="Contoh: 500000" type="number" required />
                 </div>
                 
-                <div class="flex flex-col gap-4">
-                    <flux:textarea label="Keterangan (Opsional)" placeholder="Tambahkan catatan jika ada..." rows="6" />
-                </div>
-                
-                <div class="md:col-span-2 flex justify-end mt-2">
-                    <flux:button type="submit" variant="primary" icon="qr-code">Bayar via QRIS</flux:button>
+                <div class="mt-2">
+                    <flux:button class="w-full" type="submit" variant="primary" icon="qr-code">Buat QRIS</flux:button>
                 </div>
             </form>
+            <livewire:pages::anggota.simpanan.sukarela.generate-qris />
         </flux:card>
     </div>
 
     <!-- Modal Ubah Setoran -->
-    <flux:modal name="ubah-setoran" class="md:w-[32rem] space-y-6">
+    <flux:modal name="ubah-setoran" class="md:w-lg space-y-6">
         <div>
             <flux:heading size="lg">Pengajuan Perubahan Setoran</flux:heading>
             <flux:text size="sm" class="mt-1">Silakan masukkan nominal setoran rutin bulanan yang baru.</flux:text>
@@ -249,7 +234,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
     </flux:modal>
 
     <!-- Modal Konfirmasi Ubah Setoran -->
-    <flux:modal name="konfirmasi-ubah-setoran" class="md:w-[28rem]">
+    <flux:modal name="konfirmasi-ubah-setoran" class="md:w-md">
         <div class="flex flex-col gap-6">
             <div>
                 <div class="flex items-center gap-3 text-orange-500">
@@ -280,7 +265,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
     </flux:modal>
 
     <!-- Modal Sukses -->
-    <flux:modal name="sukses-ubah-setoran" class="md:w-[28rem]">
+    <flux:modal name="sukses-ubah-setoran" class="md:w-md">
         <div class="flex flex-col items-center justify-center gap-4 text-center py-4">
             <div class="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-500 mb-2">
                 <flux:icon name="check-circle" class="w-10 h-10" />
