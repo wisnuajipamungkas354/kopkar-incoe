@@ -6,93 +6,111 @@
     <title>Pendaftaran Anggota Ditolak</title>
 </head>
 
-<body style="margin:0; padding:0; background-color:#f1f5f9; font-family:Arial, Helvetica, sans-serif;">
+<body style="
+    margin:0;
+    padding:32px 16px;
+    background:#f3f4f6;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:#111827;
+">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px;">
+<table width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center">
 
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="max-width:600px; background:#ffffff; border-radius:16px; overflow:hidden;">
+<table width="100%" cellpadding="0" cellspacing="0" style="
+    max-width:560px;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+">
 
-    <!-- Header -->
+    <!-- Top Accent -->
     <tr>
-        <td align="center"
-            style="background:linear-gradient(135deg,#dc2626,#ef4444); padding:40px 24px;">
-
-            <h1 style="margin:0; color:#ffffff; font-size:30px;">
-                Pendaftaran Ditolak
-            </h1>
-
-            <p style="margin:12px 0 0; color:#fee2e2; font-size:16px;">
-                Informasi hasil pengajuan anggota
-            </p>
-
-        </td>
+        <td style="height:4px; background:#dc2626;"></td>
     </tr>
 
     <!-- Content -->
     <tr>
-        <td style="padding:40px 28px; color:#334155;">
+        <td style="padding:40px 36px;">
 
-            <p style="font-size:16px; line-height:28px;">
-                Halo <strong>{{ $user->nama_anggota }}</strong>,
+            <!-- Brand -->
+            <p style="
+                margin:0 0 32px;
+                font-size:14px;
+                font-weight:600;
+                letter-spacing:.3px;
+                color:#111827;
+            ">
+                {{ $namaKoperasi }}
             </p>
 
-            <p style="font-size:15px; line-height:28px; color:#475569;">
-                Mohon maaf, pengajuan pendaftaran anggota koperasi Anda saat ini
-                <strong>belum dapat disetujui</strong> oleh ketua koperasi.
+            <!-- Title -->
+            <h1 style="
+                margin:0 0 24px;
+                font-size:28px;
+                line-height:36px;
+                font-weight:600;
+                color:#111827;
+            ">
+                Pendaftaran belum dapat disetujui
+            </h1>
+
+            <!-- Description -->
+            <p style="
+                margin:0 0 18px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Halo {{ $user->nama_anggota }},
             </p>
 
-            <p style="font-size:15px; line-height:28px; color:#475569;">
-                Berikut alasan penolakan:
+            <p style="
+                margin:0 0 18px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Setelah dilakukan peninjauan, pengajuan keanggotaan Anda belum dapat disetujui.
             </p>
 
-            <!-- Reason Box -->
-            <table width="100%" cellpadding="0" cellspacing="0"
-                   style="
-                        background:#fef2f2;
-                        border:1px solid #fecaca;
-                        border-radius:12px;
-                        margin:24px 0;
-                   ">
-
-                <tr>
-                    <td style="padding:24px;">
-
-                        <p style="
-                            margin:0;
-                            font-size:15px;
-                            line-height:28px;
-                            color:#991b1b;
-                        ">
-                            {{ $user->catatan_approval ?? 'Terdapat data yang tidak valid!' }}
-                        </p>
-
-                    </td>
-                </tr>
-
-            </table>
-
-            <p style="font-size:15px; line-height:28px; color:#475569;">
-                Jika terdapat kesalahan data atau informasi tambahan yang perlu disampaikan,
-                silakan hubungi pihak koperasi.
+            <p style="
+                margin:0 0 24px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Alasan penolakan:
             </p>
 
-            <p style="margin-top:40px; font-size:15px; line-height:28px; color:#475569;">
-                Hormat kami,<br>
-                <strong>Tim Koperasi Konsumen Incoe</strong>
+            <!-- Reason -->
+            <div style="
+                padding:18px 20px;
+                background:#f9fafb;
+                border:1px solid #e5e7eb;
+                border-radius:10px;
+                margin-bottom:28px;
+            ">
+                <p style="
+                    margin:0;
+                    font-size:15px;
+                    line-height:28px;
+                    color:#111827;
+                ">
+                    {{ $alasanPenolakan }}
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <p style="
+                margin:0;
+                font-size:13px;
+                line-height:24px;
+                color:#6b7280;
+            ">
+                Anda dapat melakukan pendaftaran ulang setelah data diperbaiki sesuai kebutuhan.
             </p>
-
-        </td>
-    </tr>
-
-    <!-- Footer -->
-    <tr>
-        <td align="center"
-            style="background:#f8fafc; padding:24px; font-size:13px; color:#94a3b8;">
-
-            © {{ date('Y') }} Koperasi Konsumen Incoe. All rights reserved.
 
         </td>
     </tr>

@@ -21,7 +21,8 @@ class VerifyEmailNotification extends VerifyEmail
             ->subject('Verifikasi Email Anggota')
             ->view('emails.verify-email', [
                 'url' => $verificationUrl,
-                'user' => $notifiable
+                'user' => $notifiable,
+                'namaKoperasi' => 'Koperasi Konsumen Incoe'
             ]);
     }
 

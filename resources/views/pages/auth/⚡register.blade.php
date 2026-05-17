@@ -150,7 +150,6 @@ new #[Layout('layouts.app')] class extends Component
 
         $user->fill($updateUserData);
         $user->save();
-
         $user->sendEmailVerificationNotification();
         
         session()->put('verification_email', $user->email);

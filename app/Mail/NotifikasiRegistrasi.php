@@ -15,6 +15,7 @@ class NotifikasiRegistrasi extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+    public $namaKoperasi = 'Koperasi Konsumen Incoe';
 
     /**
      * Create a new message instance.

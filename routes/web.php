@@ -23,7 +23,7 @@ Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Http\Request $requ
         return redirect('/login')->with('status', 'Email sudah diverifikasi.');
     }
     $user->markEmailAsVerified();
-    return redirect('/success')->with('status', 'Verifikasi email berhasil! Silakan tunggu persetujuan dari pengurus.');
+    return redirect('/success')->with('nama_anggota', $user->nama_anggota);
 })->middleware(['signed'])->name('verification.verify');
 
 Route::livewire('admin/anggota', 'pages::admin.anggota.index');

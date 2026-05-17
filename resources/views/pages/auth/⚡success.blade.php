@@ -1,10 +1,18 @@
 <?php
 
 use Livewire\Component;
+use Livewire\Attributes\Layout;
 
-new class extends Component
+new #[Layout('layouts.app')] class extends Component
 {
-    //
+    public $namaAnggota;
+
+    public function mount()
+    {
+        $this->namaAnggota = session('nama_anggota');
+
+        if($this->namaAnggota == null) return redirect('login');
+    }
 };
 ?>
 
@@ -29,7 +37,7 @@ new class extends Component
         <flux:heading size="xl" class="mb-2">Pendaftaran Berhasil!</flux:heading>
         
         <flux:text size="md" class="mb-8">
-            Terima kasih, <b>{{ request('nama_anggota') ?? 'Calon Anggota' }}</b>. <br> 
+            Terima kasih, <b>{{ $namaAnggota ?? 'Calon Anggota' }}</b>. <br> 
             Data pendaftaran Anda telah kami terima dan sedang dalam proses verifikasi oleh tim Koperasi Konsumen Incoe (KKI).
         </flux:text>
 
@@ -48,10 +56,6 @@ new class extends Component
 
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <flux:button href="/" wire:navigate variant="subtle" class="w-full sm:w-auto">
-                Kembali ke Beranda
-            </flux:button>
-            
             <flux:button href="{{ url('login') }}" wire:navigate variant="primary" class="w-full sm:w-auto">
                 Ke Halaman Login
             </flux:button>

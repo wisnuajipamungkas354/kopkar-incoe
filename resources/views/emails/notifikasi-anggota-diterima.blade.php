@@ -3,124 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pendaftaran Anggota Diterima</title>
+    <title>Pendaftaran Anggota Disetujui</title>
 </head>
 
-<body style="margin:0; padding:0; background-color:#f1f5f9; font-family:Arial, Helvetica, sans-serif;">
+<body style="
+    margin:0;
+    padding:32px 16px;
+    background:#f3f4f6;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:#111827;
+">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px;">
+<table width="100%" cellpadding="0" cellspacing="0">
 <tr>
 <td align="center">
 
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="max-width:600px; background:#ffffff; border-radius:16px; overflow:hidden;">
+<table width="100%" cellpadding="0" cellspacing="0" style="
+    max-width:560px;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+">
 
-    <!-- Header -->
+    <!-- Top Accent -->
     <tr>
-        <td align="center"
-            style="background:linear-gradient(135deg,#16a34a,#22c55e); padding:40px 24px;">
-
-            <h1 style="margin:0; color:#ffffff; font-size:30px;">
-                Pendaftaran Diterima 🎉
-            </h1>
-
-            <p style="margin:12px 0 0; color:#dcfce7; font-size:16px;">
-                Selamat bergabung di Koperasi Konsumen Incoe
-            </p>
-
-        </td>
+        <td style="height:4px; background:#111827;"></td>
     </tr>
 
     <!-- Content -->
     <tr>
-        <td style="padding:40px 28px; color:#334155;">
+        <td style="padding:40px 36px;">
 
-            <p style="font-size:16px; line-height:28px;">
-                Halo <strong>{{ $user->nama_anggota }}</strong>,
+            <!-- Brand -->
+            <p style="
+                margin:0 0 32px;
+                font-size:14px;
+                font-weight:600;
+                letter-spacing:.3px;
+                color:#111827;
+            ">
+                {{ $namaKoperasi }}
             </p>
 
-            <p style="font-size:15px; line-height:28px; color:#475569;">
-                Selamat! Pengajuan pendaftaran anggota koperasi Anda telah
-                <strong>disetujui</strong> oleh ketua koperasi.
+            <!-- Title -->
+            <h1 style="
+                margin:0 0 24px;
+                font-size:28px;
+                line-height:36px;
+                font-weight:600;
+                color:#111827;
+            ">
+                Pendaftaran disetujui
+            </h1>
+
+            <!-- Description -->
+            <p style="
+                margin:0 0 18px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Halo {{ $user->nama_anggota }},
             </p>
 
-            <p style="font-size:15px; line-height:28px; color:#475569;">
+            <p style="
+                margin:0 0 18px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Pengajuan keanggotaan Anda telah disetujui dan akun sudah dapat digunakan untuk login ke sistem koperasi.
+            </p>
+
+            <p style="
+                margin:0 0 28px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
                 Berikut informasi akun Anda:
             </p>
 
-            <!-- Account Box -->
-            <table width="100%" cellpadding="0" cellspacing="0"
-                   style="
-                        background:#f8fafc;
-                        border:1px solid #e2e8f0;
-                        border-radius:12px;
-                        margin:24px 0;
-                   ">
+            <!-- Credentials -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="
+                border-collapse:collapse;
+                margin-bottom:32px;
+            ">
 
                 <tr>
-                    <td style="padding:24px;">
+                    <td style="
+                        width:120px;
+                        padding:0 0 16px;
+                        font-size:14px;
+                        color:#6b7280;
+                        vertical-align:top;
+                    ">
+                        Username
+                    </td>
 
-                        <p style="margin:0 0 14px; font-size:14px; color:#64748b;">
-                            USERNAME
-                        </p>
+                    <td style="
+                        padding:0 0 16px;
+                        font-size:15px;
+                        font-weight:500;
+                        color:#111827;
+                    ">
+                        {{ $user->username }}
+                    </td>
+                </tr>
 
-                        <p style="margin:0 0 24px; font-size:16px; font-weight:bold; color:#0f172a;">
-                            {{ $user->username }}
-                        </p>
+                <tr>
+                    <td style="
+                        width:120px;
+                        padding:0;
+                        font-size:14px;
+                        color:#6b7280;
+                        vertical-align:top;
+                    ">
+                        Password
+                    </td>
 
-                        <p style="margin:0 0 14px; font-size:14px; color:#64748b;">
-                            PASSWORD
-                        </p>
-
-                        <p style="margin:0; font-size:16px; font-weight:bold; color:#0f172a;">
-                            {{ $user->password }}
-                        </p>
-
+                    <td style="
+                        padding:0;
+                        font-size:15px;
+                        font-weight:500;
+                        color:#111827;
+                    ">
+                        {{ $password }}
                     </td>
                 </tr>
 
             </table>
-
-            <p style="font-size:15px; line-height:28px; color:#475569;">
-                Demi keamanan akun, kami menyarankan Anda untuk segera mengganti password setelah login pertama.
-            </p>
 
             <!-- Button -->
-            <table cellpadding="0" cellspacing="0" style="margin-top:32px;">
-                <tr>
-                    <td align="center"
-                        style="background:#16a34a; border-radius:10px;">
+            <a href="{{ url('login') }}" style="
+                display:inline-block;
+                padding:12px 18px;
+                background:#111827;
+                color:#ffffff;
+                text-decoration:none;
+                border-radius:8px;
+                font-size:14px;
+                font-weight:500;
+            ">
+                Login ke Sistem
+            </a>
 
-                        <a href="{{ url('login') }}"
-                           style="
-                                display:inline-block;
-                                padding:14px 28px;
-                                color:#ffffff;
-                                text-decoration:none;
-                                font-size:15px;
-                                font-weight:bold;
-                           ">
-                            Login Sekarang
-                        </a>
-
-                    </td>
-                </tr>
-            </table>
-
-            <p style="margin-top:40px; font-size:15px; line-height:28px; color:#475569;">
-                Hormat kami,<br>
-                <strong>Tim Koperasi Konsumen Incoe</strong>
+            <!-- Footer -->
+            <p style="
+                margin:32px 0 0;
+                font-size:13px;
+                line-height:24px;
+                color:#6b7280;
+            ">
+                Demi keamanan akun, silakan ubah password setelah login pertama.
             </p>
-
-        </td>
-    </tr>
-
-    <!-- Footer -->
-    <tr>
-        <td align="center"
-            style="background:#f8fafc; padding:24px; font-size:13px; color:#94a3b8;">
-
-            © {{ date('Y') }} Koperasi Konsumen Incoe. All rights reserved.
 
         </td>
     </tr>

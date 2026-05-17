@@ -1,44 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Verifikasi Email Anggota</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Email</title>
 </head>
-<body style="font-family: Arial; background:#f5f5f5; padding:20px;">
 
-    <div style="
-        max-width:600px;
-        margin:auto;
-        background:white;
-        padding:40px;
-        border-radius:12px;
-    ">
+<body style="
+    margin:0;
+    padding:32px 16px;
+    background:#f3f4f6;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:#111827;
+">
 
-        <h1>Verifikasi Email Anggota Baru</h1>
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center">
 
-        <p>
-            Halo {{ $user->nama_anggota }},
-        </p>
+<table width="100%" cellpadding="0" cellspacing="0" style="
+    max-width:560px;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+">
 
-        <p>
-            Terima kasih telah mendaftar sebagai anggota koperasi.
-            Silakan verifikasi email Anda dengan menekan tombol berikut untuk melanjutkan proses pendaftaran:
-        </p>
+    <!-- Top Accent -->
+    <tr>
+        <td style="height:4px; background:#111827;"></td>
+    </tr>
 
-        <a href="{{ $url }}"
-           style="
-            display:inline-block;
-            background:#16a34a;
-            color:white;
-            padding:14px 24px;
-            border-radius:8px;
-            text-decoration:none;
-            margin-top:20px;
-           ">
-            Verifikasi Email
-        </a>
+    <!-- Content -->
+    <tr>
+        <td style="padding:40px 36px;">
 
-    </div>
+            <!-- Brand -->
+            <p style="
+                margin:0 0 32px;
+                font-size:14px;
+                font-weight:600;
+                letter-spacing:.3px;
+                color:#111827;
+            ">
+                {{ $namaKoperasi }}
+            </p>
+
+            <!-- Title -->
+            <h1 style="
+                margin:0 0 24px;
+                font-size:28px;
+                line-height:36px;
+                font-weight:600;
+                color:#111827;
+            ">
+                Verifikasi email Anda
+            </h1>
+
+            <!-- Description -->
+            <p style="
+                margin:0 0 18px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Halo {{ $user->nama_anggota }},
+            </p>
+
+            <p style="
+                margin:0 0 18px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Terima kasih telah melakukan pendaftaran anggota di {{ $namaKoperasi }}.
+            </p>
+
+            <p style="
+                margin:0 0 28px;
+                font-size:15px;
+                line-height:28px;
+                color:#374151;
+            ">
+                Untuk melanjutkan proses pendaftaran, silahkan verifikasi alamat email Anda melalui tombol berikut.
+            </p>
+
+            <!-- Button -->
+            <a href="{{ $url }}" style="
+                display:inline-block;
+                padding:12px 18px;
+                background:#111827;
+                color:#ffffff;
+                text-decoration:none;
+                border-radius:8px;
+                font-size:14px;
+                font-weight:500;
+            ">
+                Verifikasi Email
+            </a>
+
+            <!-- Additional -->
+            <p style="
+                margin:32px 0 0;
+                font-size:14px;
+                line-height:26px;
+                color:#6b7280;
+            ">
+                Setelah email berhasil diverifikasi, data pendaftaran Anda akan ditinjau oleh pihak koperasi.
+            </p>
+
+            <p style="
+                margin:18px 0 0;
+                font-size:13px;
+                line-height:24px;
+                color:#9ca3af;
+            ">
+                Jika Anda merasa tidak melakukan pendaftaran, Anda dapat mengabaikan email ini.
+            </p>
+
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
+</table>
 
 </body>
 </html>
