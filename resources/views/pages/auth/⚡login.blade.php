@@ -46,7 +46,7 @@ new #[Layout('layouts::app')] class extends Component
 
             Auth::logout();
 
-            $this->addError('username', 'Akun anda belum disetujui.');
+            $this->addError('username', 'Akun anda belum di approve oleh ketua.');
 
             return;
         }
@@ -96,6 +96,12 @@ new #[Layout('layouts::app')] class extends Component
                 <flux:heading size="xl">Selamat Datang</flux:heading>
                 <flux:subheading>Silakan masuk ke akun Anda</flux:subheading>
             </div>
+
+            @if (session('status'))
+                <div class="bg-green-50 text-green-700 p-3 rounded-lg text-sm text-center">
+                    {{ session('status') }}
+                </div>
+            @endif
 
             <flux:field>
                 <flux:label>Username</flux:label>

@@ -44,7 +44,7 @@ new #[Layout('layouts::admin')] class extends Component
                     @foreach($this->anggota as $row)
                         <flux:table.row :key="$row->id">
                             <flux:table.cell >{{ $row->id }}</flux:table.cell>
-                            <flux:table.cell >{{ $row->npk }}</flux:table.cell>
+                            <flux:table.cell >{{ $row->username }}</flux:table.cell>
                             <flux:table.cell >{{ $row->nama_anggota}}</flux:table.cell>
                             <flux:table.cell >{{ $row->gender }}</flux:table.cell>
                             <flux:table.cell ><flux:badge color="green" size="sm" inset="top bottom">Aktif</flux:badge></flux:table.cell>

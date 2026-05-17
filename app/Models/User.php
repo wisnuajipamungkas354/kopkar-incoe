@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Notifications\VerifyEmailNotification;
 
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -71,18 +72,8 @@ class User extends Authenticatable
         ];
     }
 
-    // protected static function boot()
-    // {
-    //     static::creating(function ($user) {
-    //         $user->nama_anggota = strtoupper($user->nama_anggota);
-    //         $user->ext_tempat_lahir = strtoupper($user->ext_tempat_lahir);
-    //         $user->ext_nama_ahli_waris = strtoupper($user->ext_nama_ahli_waris);
-    //     });
-
-    //     static::updating(function ($user) {
-    //         $user->nama_anggota = strtoupper($user->nama_anggota);
-    //         $user->ext_tempat_lahir = strtoupper($user->ext_tempat_lahir);
-    //         $user->ext_nama_ahli_waris = strtoupper($user->ext_nama_ahli_waris);
-    //     });
-    // }
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification);
+    }
 }

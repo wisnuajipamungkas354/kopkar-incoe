@@ -6,6 +6,8 @@ use Livewire\Attributes\Validate;
 use App\Models\User;
 use Livewire\Attributes\On; 
 use Carbon\Carbon;
+use App\Mail\NotifikasiRegistrasi;
+use Illuminate\Support\Facades\Mail;
 
 new #[Layout('layouts.app')] class extends Component
 {
@@ -38,6 +40,7 @@ new #[Layout('layouts.app')] class extends Component
 
     #[Validate('required', message: 'Email wajib diisi')]
     #[Validate('email', message: 'Format email tidak valid')]
+    #[Validate('unique:users,email', message: 'Email sudah terdaftar, gunakan email lain!')]
     public $email;
 
     #[Validate('required', message: 'Pilih jenis bank atau e-wallet')]
@@ -114,6 +117,8 @@ new #[Layout('layouts.app')] class extends Component
 
         $updateUserData = [
             // Data akun
+            'nama_anggota' => $this->nama_lengkap,
+            'email' => $this->email,
             'password' => $defaultPassword,
 
             // Data pribadi
@@ -146,9 +151,12 @@ new #[Layout('layouts.app')] class extends Component
         $user->fill($updateUserData);
         $user->save();
 
-        session()->flash('status', 'Pendaftaran berhasil dikirim!');
+        $user->sendEmailVerificationNotification();
         
-        return $this->redirect('success', navigate: true);
+        session()->put('verification_email', $user->email);
+        session()->flash('status', 'Pendaftaran berhasil dikirim! Silakan verifikasi email Anda.');
+        
+        return $this->redirect('verify-email', navigate: true);
     }
 };
 ?>
@@ -236,7 +244,7 @@ new #[Layout('layouts.app')] class extends Component
                 
                 <flux:field>
                     <flux:label>Email</flux:label>
-                    <flux:input type="email" wire:model="email" placeholder="email@contoh.com" />
+                    <flux:input type="email" wire:model.live.blur="email" placeholder="email@contoh.com" />
                     <flux:error name="email" />
                 </flux:field>
 

@@ -5,6 +5,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
 use App\Models\User;
+use App\Mail\NotifikasiApprovalAnggotaBaru;
 
 new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] class extends Component
 {
@@ -37,19 +38,41 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
     {
         $user = User::find($id);
 
-        if(!empty($user)) {
-            $user->update([
-                'ext_is_approved' => true,
-                'updated_at' => now(),
-                'join_date' => now(),
-                'status_user' => 1,
-            ]);
+        try {
+            if(!empty($user)) {
+                $user->update([
+                    'ext_is_approved' => true,
+                    'updated_at' => now(),
+                    'join_date' => now(),
+                    'status_user' => 1,
+                ]);
+    
+                Mail::to($user->email)->send(new NotifikasiApprovalAnggotaBaru($user));
+
+                session()->flash('message', 'Berhasil di Approve, Akun anggota sudah aktif!');
+            }
+        } catch(\Exception $e) {
+            session()->flash('error', 'Gagal melakukan proses approve, terjadi kesalahan pada server!');
         }
     }
 
     public function tolak($id)
     {
-        // logic reject
+        $user = User::find($id);
+
+        try {
+            if(!empty($user)) {
+                $user->update([
+                    'ext_is_approved' => false,
+                ]);
+
+                Mail::to($user->email)->send(new NotifikasiApprovalAnggotaBaru($user));
+
+                session()->flash('message', 'Berhasil melakukan penolakan!');
+            };
+        } catch(\Exception $e) {
+            session()->flash('error', 'Gagal melakukan proses penolakan, terjadi kesalahan pada server!');
+        }
     }
 };
 ?>
@@ -118,7 +141,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
     </flux:card>
 
     <!-- Modal Detail -->
-    <flux:modal name="detail-pendaftar" class="md:w-[36rem]">
+    <flux:modal name="detail-pendaftar" class="md:w-xl">
         @if($selectedAnggota)
             <div>
                 <flux:heading size="lg">Detail Pendaftar</flux:heading>
@@ -152,7 +175,11 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
                 <div class="space-y-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/40">
                     <div class="flex gap-3">
                         <flux:icon name="check-circle" class="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-                        <flux:text class="text-sm text-blue-800 dark:text-blue-200">Bersedia untuk iuran Simpanan Pokok & Wajib Koperasi via Payroll CBI.</flux:text>
+                        <flux:text class="text-sm text-blue-800 dark:text-blue-200">Email anggota sudah terverifikasi.</flux:text>
+                    </div>
+                    <div class="flex gap-3">
+                        <flux:icon name="check-circle" class="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                        <flux:text class="text-sm text-blue-800 dark:text-blue-200">Anggota bersedia untuk iuran Simpanan Pokok & Wajib yang akan dipotong via Payroll CBI.</flux:text>
                     </div>
                 </div>
 

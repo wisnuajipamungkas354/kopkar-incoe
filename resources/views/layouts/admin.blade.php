@@ -56,10 +56,10 @@
                 </flux:sidebar.group>
                 
                 <flux:sidebar.group expandable icon="document-check" heading="Persetujuan" class="grid">
-                    <flux:sidebar.item href="#">Pengajuan Pinjaman</flux:sidebar.item>
-                    <flux:sidebar.item href="#">Pengajuan Penarikan</flux:sidebar.item>
-                    <flux:sidebar.item href="#">Pengajuan Perubahan SS</flux:sidebar.item>
-                    <flux:sidebar.item href="{{ url('admin/persetujuan/registrasi-anggota') }}">Pendaftaran Anggota</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="#">Pengajuan Pinjaman</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="#">Pengajuan Penarikan</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="#">Pengajuan Perubahan SS</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/registrasi-anggota') }}">Pendaftaran Anggota</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
             <flux:sidebar.spacer />

@@ -29,7 +29,7 @@ new class extends Component
         <flux:heading size="xl" class="mb-2">Pendaftaran Berhasil!</flux:heading>
         
         <flux:text size="md" class="mb-8">
-            Terima kasih, <b>{{ request('nama') ?? 'Calon Anggota' }}</b>. <br> 
+            Terima kasih, <b>{{ request('nama_anggota') ?? 'Calon Anggota' }}</b>. <br> 
             Data pendaftaran Anda telah kami terima dan sedang dalam proses verifikasi oleh tim Koperasi Konsumen Incoe (KKI).
         </flux:text>
 

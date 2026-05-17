@@ -6,26 +6,20 @@ use Livewire\Attributes\Computed;
 
 new #[Layout('layouts::anggota')] class extends Component
 {
-    #[Computed]
-    public function totalSimpananWajib()
-    {
-        // Dummy data, ganti dengan query aktual ke database nantinya
-        return 2500000;
-    }
+    public $totalSimpanan;
+    public $totalSimpananWajib;
+    public $totalSimpananSukarela;
+    public $totalSimpananLainnya;
 
     #[Computed]
-    public function totalSimpananSukarela()
+    public function mount()
     {
-        // Dummy data, ganti dengan query aktual ke database nantinya
-        return 1250000;
+        $this->totalSimpanan = auth('web')->user()->total_simpanan ?? 0;
+        $this->totalSimpananWajib = auth('web')->user()->simpanan_wajib ?? 0;
+        $this->totalSimpananSukarela = auth('web')->user()->simpanan_sukarela_total ?? 0;
+        $this->totalSimpananLainnya = auth('web')->user()->simpanan_lain_lain ?? 0;
     }
 
-    #[Computed]
-    public function totalSimpananLainnya()
-    {
-        // Dummy data, ganti dengan query aktual ke database nantinya
-        return 250000;
-    }
 
     #[Computed]
     public function pinjamanAktif()
@@ -55,7 +49,7 @@ new #[Layout('layouts::anggota')] class extends Component
             </div>
             <div>
                 <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total Simpanan</flux:text>
-                <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->totalSimpananWajib, 0, ',', '.') }}</flux:heading>
+                <flux:heading size="xl" class="mt-1">Rp {{ number_format($totalSimpanan, 0, ',', '.') }}</flux:heading>
             </div>
         </flux:card>
 
@@ -65,7 +59,7 @@ new #[Layout('layouts::anggota')] class extends Component
             </div>
             <div>
                 <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Saldo Simpanan Sukarela</flux:text>
-                <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->totalSimpananSukarela, 0, ',', '.') }}</flux:heading>
+                <flux:heading size="xl" class="mt-1">Rp {{ number_format($totalSimpananSukarela, 0, ',', '.') }}</flux:heading>
             </div>
         </flux:card>
 
@@ -75,7 +69,7 @@ new #[Layout('layouts::anggota')] class extends Component
             </div>
             <div>
                 <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">SHU & Simpanan Lain</flux:text>
-                <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->totalSimpananLainnya, 0, ',', '.') }}</flux:heading>
+                <flux:heading size="xl" class="mt-1">Rp {{ number_format($totalSimpananLainnya, 0, ',', '.') }}</flux:heading>
             </div>
         </flux:card>
 
