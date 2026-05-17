@@ -40,14 +40,17 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
 
         try {
             if(!empty($user)) {
+                $newPassword = $user->username . '@' . rand(1000, 9999); 
+
                 $user->update([
+                    'password' => bcrypt($newPassword),
                     'ext_is_approved' => true,
                     'updated_at' => now(),
                     'join_date' => now(),
                     'status_user' => 1,
                 ]);
     
-                Mail::to($user->email)->send(new NotifikasiApprovalAnggotaBaru($user));
+                Mail::to($user->email)->send(new NotifikasiApprovalAnggotaBaru($user, $newPassword));
 
                 session()->flash('message', 'Berhasil di Approve, Akun anggota sudah aktif!');
             }

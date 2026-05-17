@@ -17,13 +17,15 @@ class NotifikasiApprovalAnggotaBaru extends Mailable
 
     public $user;
     public $namaKoperasi = 'Koperasi Konsumen Incoe';
+    public $password = '1234';
 
     /**
      * Create a new message instance.
      */
-    public function __construct($user)
+    public function __construct($user, $newPassword)
     {
         $this->user = $user;
+        $this->password = $newPassword;
     }
 
     /**
