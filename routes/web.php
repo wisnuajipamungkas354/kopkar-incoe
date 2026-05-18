@@ -29,6 +29,7 @@ Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Http\Request $requ
 Route::livewire('admin/anggota', 'pages::admin.anggota.index');
 Route::livewire('admin/ppob', 'pages::admin.ppob.index');
 Route::livewire('admin/persetujuan/registrasi-anggota', 'pages::admin.persetujuan.registrasi-anggota.index');
+Route::livewire('admin/persetujuan/simpanan-sukarela', 'pages::admin.persetujuan.simpanan-sukarela.index');
 
 Route::livewire('anggota', 'pages::anggota.dashboard');
 Route::livewire('anggota/simpanan-pokok', 'pages::anggota.simpanan.pokok.index');

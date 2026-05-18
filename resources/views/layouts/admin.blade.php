@@ -58,7 +58,7 @@
                 <flux:sidebar.group expandable icon="document-check" heading="Persetujuan" class="grid">
                     <flux:sidebar.item wire:navigate href="#">Pengajuan Pinjaman</flux:sidebar.item>
                     <flux:sidebar.item wire:navigate href="#">Pengajuan Penarikan</flux:sidebar.item>
-                    <flux:sidebar.item wire:navigate href="#">Pengajuan Perubahan SS</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/simpanan-sukarela') }}">Pengajuan Perubahan SS</flux:sidebar.item>
                     <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/registrasi-anggota') }}">Pendaftaran Anggota</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
@@ -91,6 +91,7 @@
         <flux:main>
             {{ $slot }}
         </flux:main>
+        <flux:toast />
         @livewireScripts
         @fluxScripts
     </body>

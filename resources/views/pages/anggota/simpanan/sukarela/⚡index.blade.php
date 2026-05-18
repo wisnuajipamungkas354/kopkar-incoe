@@ -6,6 +6,7 @@ use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
 use Midtrans\Config;
 use Midtrans\CoreApi;
+use App\Models\SimpananSukarelaPengaturan;
 
 new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extends Component
 {
@@ -24,7 +25,25 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
 
     public function submitUbahSetoran()
     {
-        // Dummy logic submission
+        $userId = auth('web')->user()->id;
+
+        $latestSettings = SimpananSukarelaPengaturan::where('user_id', $userId)->first();
+
+        if(!empty($latestSettings)) {
+            $latestSettings->fill([
+                'nominal_baru_diajukan' => $this->nominalBaru,
+                'status_persetujuan' => 'pending_approval',
+            ]);
+            $latestSettings->save();
+        } else {
+            SimpananSukarelaPengaturan::create([
+                'user_id' => $userId,
+                'nominal_rutin_saat_ini' => 0,
+                'nominal_baru_diajukan' => $this->nominalBaru,
+                'status_persetujuan' => 'pending_approval'
+            ]);
+        }
+
         $this->reset('nominalBaru');
     }
 
@@ -50,7 +69,8 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
     #[Computed]
     public function setoranRutin()
     {
-        return 100000;
+        $nominalSaatIni = SimpananSukarelaPengaturan::where('user_id', auth('web')->user()->id)->value('nominal_rutin_saat_ini');
+        return $nominalSaatIni;
     }
 
     #[Computed]

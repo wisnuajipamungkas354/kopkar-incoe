@@ -6,6 +6,7 @@ use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
 use App\Models\User;
 use App\Mail\NotifikasiApprovalAnggotaBaru;
+use Flux\Flux;
 
 new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] class extends Component
 {
@@ -52,7 +53,11 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
     
                 Mail::to($user->email)->send(new NotifikasiApprovalAnggotaBaru($user, $newPassword));
 
-                session()->flash('message', 'Berhasil di Approve, Akun anggota sudah aktif!');
+                Flux::toast(
+                    heading: 'Berhasil di Approve',
+                    text: 'Akun anggota berhasil diaktivasi',
+                    variant: 'success',
+                );
             }
         } catch(\Exception $e) {
             session()->flash('error', 'Gagal melakukan proses approve, terjadi kesalahan pada server!');
