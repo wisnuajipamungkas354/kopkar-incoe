@@ -2,25 +2,51 @@
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
 use Midtrans\Config;
 use Midtrans\CoreApi;
 use App\Models\SimpananSukarelaPengaturan;
+use App\Models\TransaksiMutasi;
+use App\Models\TransaksiMutasiQris;
+use Flux\Flux;
 
 new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extends Component
 {
     use WithPagination;
 
     public $search = '';
+    public $saldoSukarela = 0;
     public $nominalBaru = '';
-    public $additionalSetoran = '';
-    public $qrImage = '';
+    public $nominalSaatIni = 0;
+    public $pengajuanPending = 0;
 
-    public function submitTarikTunai()
+    public function mount()
     {
-        // Dummy logic submission
-        $this->reset(['nominalTarik', 'keteranganTarik']);
+       $this->getDataSimpananUser();
+    }
+
+    #[Computed]
+    public function getDataSimpananUser() {
+        $userId = auth('web')->user()->id;
+
+        $getData = SimpananSukarelaPengaturan::where('user_id', $userId)->first();
+
+        if(!empty($getData)) {
+            $this->saldoSukarela = $getData->saldo_sukarela ?? 0;
+            $this->nominalSaatIni = $getData->nominal_rutin_saat_ini ?? 0;
+
+            if($getData->status_persetujuan === 'pending_approval') {
+                $this->pengajuanPending = 1;
+            } else {
+                $this->pengajuanPending = 0;
+            }
+        } else {
+            $this->saldoSukarela = 0;
+            $this->nominalSaatIni = 0;
+            $this->pengajuanPending = 0;
+        }
     }
 
     public function submitUbahSetoran()
@@ -45,6 +71,9 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
         }
 
         $this->reset('nominalBaru');
+        $this->getDataSimpananUser();
+        Flux::modal('konfirmasi-ubah-setoran')->close();
+        Flux::modal('sukses-ubah-setoran')->show();
     }
 
     #[Computed]
@@ -58,49 +87,6 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
             (object) ['id' => 4, 'tanggal' => '2023-12-05', 'transaksi' => 'Penarikan', 'metode' => 'Transfer', 'status' => 'Berhasil', 'nominal' => 150000],
             (object) ['id' => 5, 'tanggal' => '2023-12-10', 'transaksi' => 'Setoran Tambahan', 'metode' => 'Transfer', 'status' => 'Pending', 'nominal' => 200000],
         ]);
-    }
-
-    #[Computed]
-    public function saldoSukarela()
-    {
-        return 1250000;
-    }
-
-    #[Computed]
-    public function setoranRutin()
-    {
-        $nominalSaatIni = SimpananSukarelaPengaturan::where('user_id', auth('web')->user()->id)->value('nominal_rutin_saat_ini');
-        return $nominalSaatIni;
-    }
-
-    #[Computed]
-    public function pengajuanPending()
-    {
-        return 1;
-    }
-
-    public function generatePayment()
-    {
-        Config::$serverKey = config('midtrans.server_key');
-        Config::$isProduction = config('midtrans.is_production');
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
-
-        $createPayment = [
-            'transaction_details' => array(
-                'order_id' => rand(),
-                'gross_amount' => (float) $this->additionalSetoran
-            ),
-            'customer_details' => array(
-                'user_id' => 1,
-                'name' => 'Wisnu Aji Pamungkas',
-                'email' => 'wisnuajipamungkas@gmail.com'
-            ),
-            'payment_type' => 'qris',
-        ];
-
-        $response = CoreApi::charge($createPayment);
-        $this->dispatch('payment-created', qrImage: $response->actions[0]->url);
     }
 };
 ?>
@@ -136,7 +122,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
             </div>
             <div>
                 <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Setoran Rutin</flux:text>
-                <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->setoranRutin, 0, ',', '.') }}<span class="text-base font-normal text-zinc-400">/bulan</span></flux:heading>
+                <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->nominalSaatIni, 0, ',', '.') }}<span class="text-base font-normal text-zinc-400">/bulan</span></flux:heading>
             </div>
         </flux:card>
 
@@ -208,18 +194,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
             <flux:text class="mt-1 text-base">Setor simpanan sukarela tambahan (sekali transfer/insidental) di luar setoran rutin.</flux:text>
         </div>
         
-        <flux:card class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <form class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end" wire:submit.prevent="generatePayment">
-                <div class="flex flex-col gap-4">
-                    <flux:input wire:model.live="additionalSetoran" label="Nominal Setoran (Rp)" min="50000" placeholder="Contoh: 500000" type="number" required />
-                </div>
-                
-                <div class="mt-2">
-                    <flux:button class="w-full" type="submit" variant="primary" icon="qr-code">Buat QRIS</flux:button>
-                </div>
-            </form>
-            <livewire:pages::anggota.simpanan.sukarela.generate-qris />
-        </flux:card>
+        <livewire:qris />
     </div>
 
     <!-- Modal Ubah Setoran -->
@@ -232,7 +207,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
         <form x-on:submit.prevent="$flux.modal('konfirmasi-ubah-setoran').show(); $flux.modal('ubah-setoran').close()" class="flex flex-col gap-4 mt-4">
             <flux:input 
                 label="Nominal Saat Ini" 
-                value="Rp {{ number_format($this->setoranRutin, 0, ',', '.') }}" 
+                value="Rp {{ number_format($this->nominalSaatIni, 0, ',', '.') }}" 
                 disabled 
             />
             
@@ -279,7 +254,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
                 <flux:modal.close>
                     <flux:button x-on:click="$flux.modal('ubah-setoran').show()" variant="ghost">Batal</flux:button>
                 </flux:modal.close>
-                <flux:button variant="primary" color="orange" wire:click="submitUbahSetoran" x-on:click="$flux.modal('konfirmasi-ubah-setoran').close(); setTimeout(() => $flux.modal('sukses-ubah-setoran').show(), 300)">Ya, Ajukan Sekarang</flux:button>
+                <flux:button variant="primary" color="orange" wire:click="submitUbahSetoran">Ya, Ajukan Sekarang</flux:button>
             </div>
         </div>
     </flux:modal>

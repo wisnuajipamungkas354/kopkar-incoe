@@ -83,4 +83,19 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasOne(SimpananSukarelaPengaturan::class);
     }
+
+    public function lazisPengaturan(): HasOne
+    {
+        return $this->hasOne(LazisPengaturan::class);
+    }
+
+    public function ppobRutinPengaturan(): HasMany
+    {
+        return $this->hasMany(PpobRutinPengaturan::class);
+    }
+
+    public function transaksiMutasi(): HasMany
+    {
+        return $this->hasMany(TransaksiMutasi::class);
+    }
 }

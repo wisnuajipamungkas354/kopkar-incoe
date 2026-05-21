@@ -24,7 +24,7 @@ class NotifikasiPerubahanSimpananSukarela extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(string $namaAnggota, string $statusApprove, ?string $nominalSebelum = null, ?string $nominalSesudah = null, string $alasanPenolakan = null)
+    public function __construct(string $namaAnggota, string $statusApprove, ?string $nominalSebelum = null, ?string $nominalSesudah = null, ?string $alasanPenolakan = null)
     {
         $this->namaAnggota = $namaAnggota;
         $this->nominalSebelum = $nominalSebelum;

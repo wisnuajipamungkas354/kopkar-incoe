@@ -7,6 +7,7 @@ use Livewire\WithPagination;
 use App\Models\SimpananSukarelaPengaturan;
 use Flux\Flux;
 use App\Mail\NotifikasiPerubahanSimpananSukarela;
+use Illuminate\Support\Facades\Mail;
 
 new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukarela'])] class extends Component
 {
@@ -61,6 +62,8 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukar
                 text: 'Perubahan nominal simpanan sukarela berhasil disetujui',
                 variant: 'success',
             );
+
+            Flux::modal('detail-pengajuan')->close();
         }
     }
 
@@ -189,7 +192,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukar
 
                 <div class="flex justify-end gap-3 pt-2">
                     <flux:button variant="danger" icon="x-mark" wire:click="tolak({{ $selectedPengajuan->id }})" x-on:click="$flux.modal('detail-pengajuan').close()">Tolak</flux:button>
-                    <flux:button variant="primary" icon="check" wire:click="approve({{ $selectedPengajuan->id }})" x-on:click="$flux.modal('detail-pengajuan').close()">Approve Perubahan</flux:button>
+                    <flux:button variant="primary" icon="check" wire:click="approve({{ $selectedPengajuan->id }})">Approve Perubahan</flux:button>
                 </div>
             </div>
         @else

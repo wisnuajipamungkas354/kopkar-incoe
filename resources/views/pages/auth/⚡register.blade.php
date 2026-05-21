@@ -76,19 +76,7 @@ new #[Layout('layouts.app')] class extends Component
         $isExists = User::where('username', $this->npk)->first();
         
         if($isExists) {
-            if($isExists->status_user == 0 || $isExists->status_user == 2) {
-                $this->nama_lengkap = $isExists->nama_anggota;
-                $this->tanggal_lahir = $isExists->tanggal_lahir;
-                $this->resetValidation('npk');
-            } else {
-                $this->nama_lengkap = null;
-                $this->tanggal_lahir = null;
-                $this->addError('npk', 'NPK sudah pernah didaftarkan!');
-            }
-        } else {
-            $this->nama_lengkap = null;
-            $this->tanggal_lahir = null;
-            $this->resetValidation('npk');
+            $this->addError('npk', 'NPK sudah pernah didaftarkan!');
         }
     }
 
@@ -110,13 +98,12 @@ new #[Layout('layouts.app')] class extends Component
         }
         unset($validated['persetujuan']);
 
-        $user = User::where('username', $this->npk)->first();
-
         // $defaultPassword = bcrypt($this->npk . '@' . rand(1000, 9999)); 
         $defaultPassword = bcrypt($this->npk . '@1234'); 
 
-        $updateUserData = [
+        $createUserData = [
             // Data akun
+            'username' => $this->npk,
             'nama_anggota' => $this->nama_lengkap,
             'email' => $this->email,
             'password' => $defaultPassword,
@@ -131,6 +118,7 @@ new #[Layout('layouts.app')] class extends Component
 
             // Data keanggotaan
             'level_user' => 1,
+            'status_user' => 0,
 
             // Data rekening
             'nama_bank' => $this->jenis_bank,
@@ -144,12 +132,11 @@ new #[Layout('layouts.app')] class extends Component
 
             // Status aplikasi tambahan
             'ext_is_approved' => false,
-
+            'created_at' => now(),
             'updated_at' => now(),
         ];
 
-        $user->fill($updateUserData);
-        $user->save();
+        $user = User::create($createUserData);
         $user->sendEmailVerificationNotification();
         
         session()->put('verification_email', $user->email);

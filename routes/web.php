@@ -27,9 +27,15 @@ Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Http\Request $requ
 })->middleware(['signed'])->name('verification.verify');
 
 Route::livewire('admin/anggota', 'pages::admin.anggota.index');
+Route::livewire('admin/anggota/create', 'pages::admin.anggota.create');
+Route::livewire('admin/anggota/{id}/edit', 'pages::admin.anggota.edit');
+Route::livewire('admin/anggota/{id}', 'pages::admin.anggota.show');
+Route::livewire('admin/simpanan-sukarela', 'pages::admin.simpanan-sukarela.index');
 Route::livewire('admin/ppob', 'pages::admin.ppob.index');
+Route::livewire('admin/lazis', 'pages::admin.lazis.index');
 Route::livewire('admin/persetujuan/registrasi-anggota', 'pages::admin.persetujuan.registrasi-anggota.index');
 Route::livewire('admin/persetujuan/simpanan-sukarela', 'pages::admin.persetujuan.simpanan-sukarela.index');
+Route::livewire('admin/persetujuan/penarikan-saldo', 'pages::admin.persetujuan.penarikan-saldo.index');
 
 Route::livewire('anggota', 'pages::anggota.dashboard');
 Route::livewire('anggota/simpanan-pokok', 'pages::anggota.simpanan.pokok.index');

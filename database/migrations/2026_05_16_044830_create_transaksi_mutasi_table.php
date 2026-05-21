@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('nomor_transaksi')->unique(); // Contoh: TX-SMP-2026-0001, GP11560
 
             // Kategori utama transaksi finansial di koperasi
-            $table->enum('kategori_transaksi', ['pokok', 'wajib', 'sukarela', 'lazis', 'ppob', 'pembiayaan', 'pinjaman']);
+            $table->enum('kategori_transaksi', ['pokok', 'wajib', 'sukarela', 'shu', 'smp_lain_lain', 'lazis', 'ppob', 'pembiayaan', 'pinjaman']);
 
             // Jenis aksi mutasi dana
             $table->enum('jenis_transaksi', ['setoran_awal', 'payroll_rutin', 'setoran_tambahan', 'pencairan_dana', 'angsuran_bulanan']);
@@ -29,7 +29,7 @@ return new class extends Migration
             // Metode perpindahan dana
             $table->enum('metode_pembayaran', ['payroll', 'qris', 'cash']);
 
-            // Nominal transaksi (Untuk PPOB menyimpan total HPP + FEE)
+            // Nominal transaksi (Untuk PPOB menyimpan total HPP + FEE, Penarikan SS total nominal + admin bank jika ada)
             $table->decimal('nominal', 15, 2);
             $table->enum('status_pembayaran', ['pending', 'success', 'failed'])->default('pending');
 

@@ -88,7 +88,7 @@ new #[Layout('layouts::anggota')] class extends Component
                 <flux:icon name="clock" class="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
             <div>
-                <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Sisa Cicilan</flux:text>
+                <flux:text class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Sisa Pembiayaan</flux:text>
                 <flux:heading size="xl" class="mt-1">Rp {{ number_format($this->sisaCicilan, 0, ',', '.') }}</flux:heading>
             </div>
         </flux:card>
