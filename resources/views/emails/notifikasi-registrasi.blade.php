@@ -30,7 +30,7 @@
                         <td style="padding:40px 32px; color:#334155;">
 
                             <p style="font-size:16px; margin-top:0;">
-                                Halo <strong>{{ $user->nama_anggota }}</strong>,
+                                Halo <strong>{{ $user->userable->nama_lengkap }}</strong>,
                             </p>
 
                             <p style="font-size:15px; line-height:1.8;">

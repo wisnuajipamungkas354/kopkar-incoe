@@ -67,4 +67,9 @@ class TransaksiMutasi extends Model
     {
         return $this->hasOne(TransaksiMutasiQris::class);
     }
+
+    public function ppobDetailTagihan(): HasOne
+    {
+        return $this->hasOne(PpobDetailTagihan::class, 'transaksi_mutasi_id');
+    }
 }

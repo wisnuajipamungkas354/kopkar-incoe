@@ -14,7 +14,7 @@ Route::livewire('success', 'pages::auth.success');
 Route::livewire('verify-email', 'pages::auth.verify-email')->name('verification.notice');
 
 Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Http\Request $request, $id, $hash) {
-    $user = \App\Models\User::findOrFail($id);
+    $user = \App\Models\User::with('userable')->findOrFail($id);
 
     if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
         abort(403, 'Tautan verifikasi tidak valid atau kadaluarsa.');
@@ -23,9 +23,10 @@ Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Http\Request $requ
         return redirect('/login')->with('status', 'Email sudah diverifikasi.');
     }
     $user->markEmailAsVerified();
-    return redirect('/success')->with('nama_anggota', $user->nama_anggota);
+    return redirect('/success')->with('nama_anggota', $user->userable->nama_lengkap);
 })->middleware(['signed'])->name('verification.verify');
 
+Route::livewire('admin/transaksi', 'pages::admin.transaksi.index');
 Route::livewire('admin/anggota', 'pages::admin.anggota.index');
 Route::livewire('admin/anggota/create', 'pages::admin.anggota.create');
 Route::livewire('admin/anggota/{id}/edit', 'pages::admin.anggota.edit');
@@ -38,6 +39,7 @@ Route::livewire('admin/persetujuan/simpanan-sukarela', 'pages::admin.persetujuan
 Route::livewire('admin/persetujuan/penarikan-saldo', 'pages::admin.persetujuan.penarikan-saldo.index');
 
 Route::livewire('anggota', 'pages::anggota.dashboard');
+Route::livewire('anggota/profile', 'pages::anggota.profile');
 Route::livewire('anggota/simpanan-pokok', 'pages::anggota.simpanan.pokok.index');
 Route::livewire('anggota/simpanan-wajib', 'pages::anggota.simpanan.wajib.index');
 Route::livewire('anggota/simpanan-sukarela', 'pages::anggota.simpanan.sukarela.index');

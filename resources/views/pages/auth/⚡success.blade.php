@@ -65,8 +65,7 @@ new #[Layout('layouts.app')] class extends Component
         <flux:separator class="my-8" />
         
         <flux:text size="xs" class="text-zinc-500">
-            Butuh bantuan? Hubungi Sekretariat KKI atau melalui <br>
-            <a href="#" class="text-indigo-600 dark:text-indigo-400 hover:underline">Pusat Bantuan Digital</a>
+            Butuh bantuan? Hubungi Sekretariat KKI<br>
         </flux:text>
     </flux:card>
 </div>

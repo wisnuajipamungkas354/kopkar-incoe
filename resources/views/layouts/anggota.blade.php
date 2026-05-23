@@ -62,7 +62,8 @@
           <flux:dropdown position="top" align="start">
               <flux:profile avatar="https://fluxui.dev/img/demo/user.png" />
               <flux:menu>
-                  <flux:menu.item icon="user" class="font-semibold">{{ auth()->user()->name ?? 'Anggota Koperasi' }}</flux:menu.item>
+                  <flux:menu.item icon="user" class="font-semibold">{{ auth()->user()->userable->nama_lengkap ?? 'Anggota Koperasi' }}</flux:menu.item>
+                  <flux:menu.item icon="user-circle" href="{{ url('anggota/profile') }}" wire:navigate>Profil Saya</flux:menu.item>
                   <flux:menu.separator />
                   <flux:menu.item icon="arrow-right-start-on-rectangle" href="{{ url('/logout') }}">Logout</flux:menu.item>
               </flux:menu>
@@ -147,8 +148,8 @@
               </flux:menu>
           </flux:dropdown>
 
-          <a href="#" class="flex flex-col items-center gap-1 transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-              <flux:icon name="user" variant="outline" class="w-6 h-6" />
+          <a href="{{ url('anggota/profile') }}" wire:navigate class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/profile') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+              <flux:icon name="user" variant="{{ request()->is('anggota/profile') ? 'solid' : 'outline' }}" class="w-6 h-6" />
               <span class="text-[10px] font-medium">Profil</span>
           </a>
       </div>

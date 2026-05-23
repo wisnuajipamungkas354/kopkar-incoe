@@ -21,10 +21,26 @@ class RoleMiddleware
 
         $user = \Illuminate\Support\Facades\Auth::user();
 
-        // anggota: level_user 0 atau 1
-        $isAnggota = in_array($user->level_user, [0, 1]);
-        // admin: level_user selain 0 dan 1
-        $isAdmin = !$isAnggota;
+        // anggota: jika user isMember() dan status member aktif serta di-approve
+        $isAnggota = false;
+        if ($user->isMember()) {
+            $member = $user->userable?->koperasiMember;
+            if ($member && $member->status === 'active' && $member->is_approved) {
+                $isAnggota = true;
+            }
+        }
+
+        // admin: jika user active KoperasiStaff atau active KoperasiManagement
+        $isAdmin = false;
+        if ($user->isKoperasiStaff()) {
+            if ($user->userable && $user->userable->employment_status === 'active') {
+                $isAdmin = true;
+            }
+        } elseif ($user->isManagement()) {
+            if ($user->userable && $user->userable->koperasiManagements()->where('status', 'active')->exists()) {
+                $isAdmin = true;
+            }
+        }
 
         if ($role === 'admin' && $isAdmin) {
             return $next($request);
@@ -39,6 +55,12 @@ class RoleMiddleware
             return redirect('/admin');
         }
 
-        return redirect('/anggota');
+        if ($isAnggota) {
+            return redirect('/anggota');
+        }
+
+        // Jika tidak memiliki peran apa pun yang aktif, paksa logout dan arahkan ke login
+        \Illuminate\Support\Facades\Auth::logout();
+        return redirect('/login')->withErrors(['username' => 'Akun anda tidak memiliki akses aktif.']);
     }
 }

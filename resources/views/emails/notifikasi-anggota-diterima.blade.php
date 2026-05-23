@@ -63,7 +63,7 @@
                 line-height:28px;
                 color:#374151;
             ">
-                Halo {{ $user->nama_anggota }},
+                Halo {{ $member->employee->nama_lengkap }},
             </p>
 
             <p style="
@@ -107,7 +107,7 @@
                         font-weight:500;
                         color:#111827;
                     ">
-                        {{ $user->username }}
+                        {{ $member->employee->user->username }}
                     </td>
                 </tr>
 

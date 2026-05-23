@@ -7,6 +7,7 @@ use App\Models\User;
 use Livewire\Attributes\On; 
 use Carbon\Carbon;
 use App\Mail\NotifikasiRegistrasi;
+use App\Models\Employee;
 use Illuminate\Support\Facades\Mail;
 
 new #[Layout('layouts.app')] class extends Component
@@ -36,7 +37,7 @@ new #[Layout('layouts.app')] class extends Component
     #[Validate('required', message: 'Nomor WhatsApp aktif wajib diisi')]
     #[Validate('numeric', message: 'Nomor WA harus berupa angka')]
     #[Validate('min:10', message: 'Nomor WA minimal 10 digit')]
-    public $no_whatsapp;
+    public $no_telp;
 
     #[Validate('required', message: 'Email wajib diisi')]
     #[Validate('email', message: 'Format email tidak valid')]
@@ -77,6 +78,18 @@ new #[Layout('layouts.app')] class extends Component
         
         if($isExists) {
             $this->addError('npk', 'NPK sudah pernah didaftarkan!');
+        } else {
+            $isExistsEmployee = Employee::where('npk', $this->npk)->first();
+            if(!$isExistsEmployee) {
+                $this->addError('npk', 'NPK tidak tersedia!');
+            } else {
+                $this->nama_lengkap = $isExistsEmployee->nama_lengkap;
+                $this->jenis_kelamin = $isExistsEmployee->jk;
+                $this->tempat_lahir = $isExistsEmployee->tempat_lahir;
+                $this->tanggal_lahir = date('Y-m-d', strtotime($isExistsEmployee->tanggal_lahir));
+                $this->alamat = $isExistsEmployee->alamat;
+                $this->resetErrorBag('npk');
+            }
         }
     }
 
@@ -85,6 +98,8 @@ new #[Layout('layouts.app')] class extends Component
         $umur = Carbon::parse($this->tanggal_lahir)->age;
         if($umur < 18) {
             $this->addError('tanggal_lahir', 'Umur minimal 18 tahun!');
+        } else {
+            $this->resetErrorBag('tanggal_lahir');
         }
     }
 
@@ -98,45 +113,32 @@ new #[Layout('layouts.app')] class extends Component
         }
         unset($validated['persetujuan']);
 
-        // $defaultPassword = bcrypt($this->npk . '@' . rand(1000, 9999)); 
-        $defaultPassword = bcrypt($this->npk . '@1234'); 
+        $employee = Employee::where('npk', $this->npk)->first();
+        $employee->update([
+            'jk' => $this->jenis_kelamin,
+            'tempat_lahir' => $this->tempat_lahir,
+            'tanggal_lahir' => date('Y-m-d', strtotime($this->tanggal_lahir)),
+            'alamat' => $this->alamat,
+            'no_telp' => $this->no_telp,
+            'pendidikan_terakhir' => $this->pendidikan_terakhir,
+        ]);
 
-        $createUserData = [
-            // Data akun
-            'username' => $this->npk,
-            'nama_anggota' => $this->nama_lengkap,
-            'email' => $this->email,
-            'password' => $defaultPassword,
-
-            // Data pribadi
-            'gender' => $this->jenis_kelamin,
-            'tanggal_lahir' => $this->tanggal_lahir,
-            'ext_tempat_lahir' => $this->tempat_lahir,
-            'ext_alamat' => $this->alamat,
-            'ext_pendidikan_terakhir' => $this->pendidikan_terakhir,
-            'no_telp' => $this->no_whatsapp,
-
-            // Data keanggotaan
-            'level_user' => 1,
-            'status_user' => 0,
-
-            // Data rekening
+        $employee->koperasiMember()->updateOrCreate([], [
             'nama_bank' => $this->jenis_bank,
             'no_rekening' => $this->no_rekening,
-            'pemilik_no_rekening' => $this->nama_pemilik_rekening,
+            'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
+            'nama_ahli_waris' => $this->nama_ahli_waris,
+            'hubungan_ahli_waris' => $this->hubungan_ahli_waris,
+            'hubungan_lainnya' => $this->hubungan_lainnya,
+        ]);
 
-            // Data ahli waris
-            'ext_nama_ahli_waris' => $this->nama_ahli_waris,
-            'ext_hubungan_ahli_waris' => $this->hubungan_ahli_waris,
-            'ext_hubungan_lainnya' => $this->hubungan_lainnya,
+        $user = User::with('employee')->create([
+            'username' => $this->npk,
+            'email' => $this->email,
+            'userable_type' => Employee::class,
+            'userable_id' => $employee->id,
+        ]);
 
-            // Status aplikasi tambahan
-            'ext_is_approved' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
-
-        $user = User::create($createUserData);
         $user->sendEmailVerificationNotification();
         
         session()->put('verification_email', $user->email);
@@ -187,7 +189,7 @@ new #[Layout('layouts.app')] class extends Component
 
                 <flux:field>
                     <flux:radio.group wire:model="jenis_kelamin" label="Jenis Kelamin">
-                        <flux:radio value="L" label="Laki-laki" checked />
+                        <flux:radio value="L" label="Laki-laki" />
                         <flux:radio value="P" label="Perempuan" />
                     </flux:radio.group>
                     <flux:error name="jenis_kelamin" />
@@ -236,8 +238,8 @@ new #[Layout('layouts.app')] class extends Component
 
                 <flux:field>
                     <flux:label>No. WhatsApp</flux:label>
-                    <flux:input type="tel" wire:model="no_whatsapp" placeholder="08xxxxxxxxxx" />
-                    <flux:error name="no_whatsapp" />
+                    <flux:input type="tel" wire:model="no_telp" placeholder="08xxxxxxxxxx" />
+                    <flux:error name="no_telp" />
                 </flux:field>
                 
                 <flux:field>
@@ -256,7 +258,7 @@ new #[Layout('layouts.app')] class extends Component
                 </flux:field>
                 <flux:field>
                     <flux:label>Nama Pemilik Rekening</flux:label>
-                    <flux:input type="tel" wire:model="nama_pemilik_rekening" placeholder="Masukan nama pemilik rekening" />
+                    <flux:input type="text" wire:model="nama_pemilik_rekening" placeholder="Masukan nama pemilik rekening" />
                     <flux:error name="nama_pemilik_rekening" />
                 </flux:field>
                 <flux:field>
@@ -269,16 +271,16 @@ new #[Layout('layouts.app')] class extends Component
                 <flux:field>
                     <flux:label>Hubungan Ahli Waris</flux:label>
                     <flux:select wire:model.live="hubungan_ahli_waris" placeholder="Pilih hubungan">
-                        <flux:select.option value="Istri/Suami">Istri / Suami</flux:select.option>
-                        <flux:select.option value="Anak">Anak</flux:select.option>
-                        <flux:select.option value="Orang Tua">Orang Tua</flux:select.option>
-                        <flux:select.option value="Lainnya">Lainnya</flux:select.option>
+                        <flux:select.option value="suami_istri">Istri / Suami</flux:select.option>
+                        <flux:select.option value="anak">Anak</flux:select.option>
+                        <flux:select.option value="orang_tua">Orang Tua</flux:select.option>
+                        <flux:select.option value="lainnya">Lainnya</flux:select.option>
                     </flux:select>
                     <flux:error name="hubungan_ahli_waris" />
                 </flux:field>
 
                 <!-- Input tambahan jika memilih "Lainnya" -->
-                @if($hubungan_ahli_waris === 'Lainnya')
+                @if($hubungan_ahli_waris === 'lainnya')
                     <flux:field class="md:col-span-2">
                         <flux:label>Sebutkan Hubungan Ahli Waris</flux:label>
                         <flux:input wire:model="hubungan_lainnya" placeholder="Sebutkan hubungan spesifik (contoh: Saudara Kandung)" />
@@ -315,7 +317,7 @@ new #[Layout('layouts.app')] class extends Component
             <!-- Tombol Submit -->
             <div class="mt-8 flex justify-end gap-3">
                 <flux:button href="{{ url('login') }}" wire:navigate variant="subtle">Batal</flux:button>
-                <flux:button type="submit" variant="primary" :disabled="!in_array('setuju', $persetujuan)">Kirim Pendaftaran</flux:button>
+                <flux:button type="submit" variant="primary" :loading="true" :disabled="!in_array('setuju', $persetujuan)">Kirim Pendaftaran</flux:button>
             </div>
 
         </form>

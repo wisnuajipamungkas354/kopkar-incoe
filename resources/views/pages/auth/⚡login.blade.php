@@ -1,14 +1,18 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Livewire\Component;
 use Livewire\Layout;
 use Livewire\Attributes\Validate;
 
 new #[Layout('layouts::app')] class extends Component
 {
-    #[Validate('required', 'Username wajib diisi')]
+    #[Validate('required', message: 'Username wajib diisi')]
+    #[Validate('min:4', message: 'Username minimal 4 karakter')]
     public $username;
-    #[Validate('required', 'Password wajib diisi')]
+    #[Validate('required', message: 'Password wajib diisi')]
+    #[Validate('min:8', message: 'Password minimal 8 karakter')]
     public $password;
     public $remember;
 
@@ -31,34 +35,57 @@ new #[Layout('layouts::app')] class extends Component
 
         $user = Auth::user();
 
-        // Cek status akun aktif
-        if (! $user->status_user === 1) {
+        $isActiveStaff = false;
+        $isActiveManagement = false;
+        $isActiveMember = false;
+        $isPendingMember = false;
 
-            Auth::logout();
-
-            $this->addError('username', 'Akun anda tidak aktif.');
-
-            return;
+        if ($user->isKoperasiStaff()) {
+            if ($user->userable && $user->userable->employment_status === 'active') {
+                $isActiveStaff = true;
+            }
+        } elseif ($user->isEmployee()) {
+            $employee = $user->userable;
+            if ($employee) {
+                // Cek management aktif
+                if ($employee->koperasiManagements()->where('status', 'active')->exists()) {
+                    $isActiveManagement = true;
+                }
+                
+                // Cek member aktif & approved
+                $member = $employee->koperasiMember;
+                if ($member) {
+                    if ($member->status === 'active' && $member->is_approved) {
+                        $isActiveMember = true;
+                    } elseif ($member->status === 'pending' || !$member->is_approved) {
+                        $isPendingMember = true;
+                    }
+                }
+            }
         }
 
-        // Cek approval anggota
-        if (! $user->ext_is_approved) {
-
-            Auth::logout();
-
-            $this->addError('username', 'Akun anda belum di approve oleh ketua.');
-
-            return;
-        }
-
-        Session::regenerate();
-
-        // Redirect sesuai kebutuhan
-        if (!in_array($user->level_user, [0, 1])) {
+        // Jika staff atau management aktif, arahkan ke admin
+        if ($isActiveStaff || $isActiveManagement) {
+            Session::regenerate();
             return redirect()->intended('admin/');
         }
 
-        return redirect()->intended('anggota/');
+        // Jika member aktif (dan bukan admin aktif), arahkan ke anggota
+        if ($isActiveMember) {
+            Session::regenerate();
+            return redirect()->intended('anggota/');
+        }
+
+        // Jika tidak memiliki akses yang valid/aktif, paksa logout dan tampilkan error
+        Auth::logout();
+
+        if ($isPendingMember) {
+            $this->addError('username', 'Akun anda belum di approve oleh ketua.');
+        } else {
+            $this->addError('username', 'Akun anda tidak aktif.');
+        }
+
+        return;
     }
 };
 ?>

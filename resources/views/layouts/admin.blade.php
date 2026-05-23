@@ -41,6 +41,11 @@
             <flux:sidebar.nav>
                 <flux:sidebar.item icon="home" href="{{ url('/admin') }}" wire:navigate :current="request()->is('admin')">Dashboard</flux:sidebar.item>
                 
+                @php
+                    $pendingTxCount = \App\Models\TransaksiMutasi::where('status_pembayaran', 'pending')->count();
+                @endphp
+                <flux:sidebar.item icon="document-text" :badge="$pendingTxCount > 0 ? $pendingTxCount : null" href="{{ url('/admin/transaksi') }}" wire:navigate :current="request()->is('admin/transaksi')">Transaksi</flux:sidebar.item>
+                
                 <flux:sidebar.item icon="users" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate :current="request()->is('admin/anggota')">Anggota</flux:sidebar.item>
                 
                 <flux:sidebar.item icon="wallet" href="{{ url('/admin/simpanan-sukarela') }}" wire:navigate :current="request()->is('admin/simpanan-sukarela')">Simpanan Sukarela</flux:sidebar.item>

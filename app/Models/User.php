@@ -3,69 +3,36 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Notifications\VerifyEmailNotification;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * The attributes that are mass assignable.
      */
-
     protected $fillable = [
+        'userable_id',
+        'userable_type',
         'username',
         'email',
         'password',
+    ];
 
-        // Data pribadi
-        'nama_anggota',
-        'gender',
-        'tanggal_lahir',
-        'ext_tempat_lahir',
-        'ext_alamat',
-        'ext_pendidikan_terakhir',
-        'no_telp',
-
-        // Data keanggotaan
-        'join_astra',
-        'join_date',
-        'employement_status',
-        'grade_category',
-        'seksi',
-        'status_user',
-        'level_user',
-
-        // Data rekening
-        'nama_bank',
-        'no_rekening',
-        'pemilik_no_rekening',
-
-        // Ahli waris
-        'ext_nama_ahli_waris',
-        'ext_hubungan_ahli_waris',
-        'ext_hubungan_lainnya',
-
-        // Status aplikasi
-        'ext_is_approved',
-
-        // Auth Laravel
-        'email_verified_at',
+    /**
+     * The attributes that should be hidden for serialization.
+     */
+    protected $hidden = [
+        'password',
         'remember_token',
     ];
 
+    /**
+     * The attributes that should be cast.
+     */
     protected function casts(): array
     {
         return [
@@ -76,26 +43,53 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification()
     {
-        $this->notify(new VerifyEmailNotification);
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
     }
 
-    public function simpananSukarelaPengaturan(): HasOne
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
+
+    public function userable(): MorphTo
     {
-        return $this->hasOne(SimpananSukarelaPengaturan::class);
+        return $this->morphTo();
     }
 
-    public function lazisPengaturan(): HasOne
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+    public function getKoperasiMemberAttribute()
     {
-        return $this->hasOne(LazisPengaturan::class);
+        if ($this->userable instanceof Employee) {
+            return $this->userable->koperasiMember;
+        }
+
+        return null;
     }
 
-    public function ppobRutinPengaturan(): HasMany
+    public function isEmployee(): bool
     {
-        return $this->hasMany(PpobRutinPengaturan::class);
+        return $this->userable instanceof Employee;
     }
 
-    public function transaksiMutasi(): HasMany
+    public function isKoperasiStaff(): bool
     {
-        return $this->hasMany(TransaksiMutasi::class);
+        return $this->userable instanceof KoperasiStaff;
+    }
+
+    public function isMember(): bool
+    {
+        return $this->isEmployee()
+            && $this->userable->koperasiMember()->exists();
+    }
+
+    public function isManagement(): bool
+    {
+        return $this->isEmployee()
+            && $this->userable->koperasiManagements()->exists();
     }
 }

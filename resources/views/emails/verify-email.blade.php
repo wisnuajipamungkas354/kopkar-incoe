@@ -63,7 +63,7 @@
                 line-height:28px;
                 color:#374151;
             ">
-                Halo {{ $user->nama_anggota }},
+                Halo {{ $user->userable->nama_lengkap }},
             </p>
 
             <p style="

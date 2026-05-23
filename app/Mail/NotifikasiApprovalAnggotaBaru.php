@@ -15,16 +15,16 @@ class NotifikasiApprovalAnggotaBaru extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $user;
+    public $member;
     public $namaKoperasi = 'Koperasi Konsumen Incoe';
     public $password = '1234';
 
     /**
      * Create a new message instance.
      */
-    public function __construct($user, $newPassword)
+    public function __construct($member, $newPassword = null)
     {
-        $this->user = $user;
+        $this->member = $member;
         $this->password = $newPassword;
     }
 
@@ -34,7 +34,7 @@ class NotifikasiApprovalAnggotaBaru extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Notifikasi Approval Anggota Baru - ' . $this->user->nama_anggota,
+            subject: 'Notifikasi Approval Anggota Baru - ' . $this->member->employee->nama_lengkap,
         );
     }
 
@@ -43,7 +43,7 @@ class NotifikasiApprovalAnggotaBaru extends Mailable
      */
     public function content(): Content
     {
-        $view = $this->user->ext_is_approved ? 'emails.notifikasi-anggota-diterima' : 'emails.notifikasi-anggota-ditolak';
+        $view = $this->member->is_approved ? 'emails.notifikasi-anggota-diterima' : 'emails.notifikasi-anggota-ditolak';
 
         return new Content(
             view: $view,

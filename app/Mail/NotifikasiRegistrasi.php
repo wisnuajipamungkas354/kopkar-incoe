@@ -20,9 +20,9 @@ class NotifikasiRegistrasi extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct($user)
+    public function __construct($member)
     {
-        $this->user = $user;
+        $this->user = $member->user;
     }
 
     /**
