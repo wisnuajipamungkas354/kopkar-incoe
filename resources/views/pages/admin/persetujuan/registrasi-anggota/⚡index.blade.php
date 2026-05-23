@@ -7,7 +7,10 @@ use Livewire\WithPagination;
 use App\Models\User;
 use App\Mail\NotifikasiApprovalAnggotaBaru;
 use App\Models\KoperasiMember;
+use App\Models\PotonganPayrollEmployee;
+use App\Models\TagihanPayrollEmployee;
 use App\Models\UserPreferences;
+use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Mail;
 
@@ -55,6 +58,25 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
 
                 $member->employee->user->update([
                     'password' => bcrypt($newPassword),            
+                ]);
+
+                // Membuat potongan payroll untuk simpanan wajib
+                PotonganPayrollEmployee::create([
+                    'employee_id' => $member->employee_id,
+                    'jenis_potongan' => 'simpanan_wajib',
+                    'nominal' => 150000,
+                    'tanggal_mulai_berlaku' => Carbon::now()->addMonth()->startOfMonth(),
+                ]);
+
+                // Membuat tagihan payroll untuk simpanan pokok
+                TagihanPayrollEmployee::create([
+                    'employee_id' => $member->employee_id,
+                    'jenis_tagihan' => 'simpanan_pokok',
+                    'periode_bulan' => Carbon::now()->format('m'),
+                    'periode_tahun' => Carbon::now()->format('Y'),
+                    'periode_payroll_bulan' => Carbon::now()->addMonth()->format('m'),
+                    'periode_payroll_tahun' => Carbon::now()->addMonth()->format('Y'),
+                    'nominal' => 50000,
                 ]);
     
                 Mail::to($member->employee->user->email)->send(new NotifikasiApprovalAnggotaBaru($member, $newPassword));

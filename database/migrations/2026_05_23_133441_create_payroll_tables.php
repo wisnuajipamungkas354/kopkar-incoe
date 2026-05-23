@@ -138,9 +138,13 @@ return new class extends Migration
 
             $table->unsignedBigInteger('referensi_id')->nullable();
 
+            
             $table->unsignedTinyInteger('periode_bulan');
             $table->year('periode_tahun');
 
+            // Payroll pemotongan
+            $table->unsignedTinyInteger('periode_payroll_bulan');
+            $table->year('periode_payroll_tahun');
             $table->decimal('nominal', 15, 2);
 
             $table->enum('status', [
