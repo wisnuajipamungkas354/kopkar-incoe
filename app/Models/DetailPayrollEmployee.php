@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class detail_payroll_employee extends Model
+class DetailPayrollEmployee extends Model
 {
-    //
+    protected $table = 'detail_payroll_employee';
+    protected $guarded = ['id'];
 }

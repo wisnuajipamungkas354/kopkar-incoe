@@ -7,6 +7,9 @@ use Livewire\WithPagination;
 use App\Models\SimpananSukarelaPengaturan;
 use Flux\Flux;
 use App\Mail\NotifikasiPerubahanSimpananSukarela;
+use App\Models\PengajuanPerubahanPotonganPayroll;
+use App\Models\PotonganPayrollEmployee;
+use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
 new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukarela'])] class extends Component
@@ -19,15 +22,13 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukar
     #[Computed]
     public function pengajuan()
     {
-        $data = SimpananSukarelaPengaturan::with('user')
-                ->where('status_persetujuan', 'pending_approval')
-                ->orderBy('updated_at', 'DESC')
-                ->get();
+        $data = PengajuanPerubahanPotonganPayroll::with(['employee', 'employee.user'])->where('jenis_potongan', 'simpanan_sukarela')
+                ->where('status', 'pending')->orderBy('updated_at', 'DESC')->get();
 
         if (!empty($this->search)) {
             return $data->filter(function($item) {
-                return stripos($item->user->nama_anggota ?? '', $this->search) !== false || 
-                       stripos($item->user->username ?? '', $this->search) !== false;
+                return stripos($item->employee->nama_lengkap ?? '', $this->search) !== false || 
+                       stripos($item->employee->user->username ?? '', $this->search) !== false;
             });
         }
 
@@ -41,44 +42,47 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukar
 
     public function approve($id)
     {
-        $pengajuan = SimpananSukarelaPengaturan::with('user')->find($id);
+        $this->selectedPengajuan->update([
+            'status' => 'disetujui',
+            'disetujui_oleh' => auth('web')->user()->id,
+            'tanggal_persetujuan' => now(),
+        ]);
         
-        $namaAnggota = $pengajuan->user->nama_anggota;
-        $nominalSebelum = $pengajuan->nominal_rutin_saat_ini;
-        $nominalSesudah = $pengajuan->nominal_baru_diajukan;
-        $statusApprove = 'approved';
+        PotonganPayrollEmployee::create([
+            'employee_id' => $this->selectedPengajuan->employee_id,
+            'jenis_potongan' => 'simpanan_sukarela',
+            'nominal' => $this->selectedPengajuan->nominal_baru,
+            'tanggal_mulai_berlaku' => $this->selectedPengajuan->tanggal_berlaku,
+            'pengajuan_perubahan_id' => $this->selectedPengajuan->id,
+        ]);
+        
+        $user = User::with('userable')->where('userable_type', 'App\Models\Employee')->where('userable_id', $this->selectedPengajuan->employee_id)->first();
 
-        if($pengajuan) {
-            $pengajuan->update([
-                'status_persetujuan' => $statusApprove,
-                'nominal_rutin_saat_ini' => $nominalSesudah,
-            ]);
-
-
-            Mail::to($pengajuan->user->email)->send(new NotifikasiPerubahanSimpananSukarela($namaAnggota, $statusApprove, $nominalSebelum, $nominalSesudah));
+        if(!empty($user)) {
+            Mail::to($user->email)->send(new NotifikasiPerubahanSimpananSukarela($user->userable->nama_lengkap, 'disetujui', $this->selectedPengajuan->nominal_lama, $this->selectedPengajuan->nominal_baru));
 
             Flux::toast(
                 heading: 'Berhasil di Approve',
                 text: 'Perubahan nominal simpanan sukarela berhasil disetujui',
                 variant: 'success',
             );
-
+    
             Flux::modal('detail-pengajuan')->close();
         }
+
     }
 
     public function tolak($id)
     {
-        $pengajuan = SimpananSukarelaPengaturan::with('user')->find($id);
-        $namaAnggota = $pengajuan->user->nama_anggota;
-        $statusApprove = 'rejected';
+        $this->selectedPengajuan->update([
+            'status' => 'ditolak',
+            'catatan' => 'Pengajuan ditolak oleh Ketua Koperasi',
+        ]);
+        
+        $user = User::with('userable')->where('userable_type', 'App\Models\Employee')->where('userable_id', $this->selectedPengajuan->employee_id)->first();
 
-        if($pengajuan) {
-            $pengajuan->update([
-                'status_persetujuan' => $statusApprove,
-            ]);
-
-            Mail::to($pengajuan->user->email)->send(new NotifikasiPerubahanSimpananSukarela($namaAnggota, $statusApprove));
+        if($user) {
+            Mail::to($user->email)->send(new NotifikasiPerubahanSimpananSukarela(namaAnggota: $user->userable->nama_lengkap, statusApprove: 'ditolak', alasanPenolakan: 'Pengajuan perubahan simpanan sukarela Anda ditolak. Silakan hubungi bagian administrasi untuk informasi lebih lanjut.'));
 
             Flux::toast(
                 heading: 'Berhasil ditolak',
@@ -123,18 +127,18 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukar
                 <flux:table.rows>
                     @forelse($this->pengajuan as $row)
                         <flux:table.row :key="$row->id">
-                            <flux:table.cell>{{ \Carbon\Carbon::parse($row->updated_at)->format('d/m/Y') }}</flux:table.cell>
-                            <flux:table.cell class="font-medium text-zinc-900 dark:text-white">{{ $row->user->username ?? '-' }}</flux:table.cell>
+                            <flux:table.cell>{{ \Carbon\Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</flux:table.cell>
+                            <flux:table.cell class="font-medium text-zinc-900 dark:text-white">{{ $row->employee->npk ?? '-' }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-300">
-                                        {{ substr($row->user->nama_anggota ?? 'A', 0, 1) }}
+                                        {{ substr($row->employee->nama_lengkap ?? 'A', 0, 1) }}
                                     </div>
-                                    <span class="font-medium">{{ $row->user->nama_anggota ?? 'Unknown' }}</span>
+                                    <span class="font-medium">{{ $row->employee->nama_lengkap ?? 'Unknown' }}</span>
                                 </div>
                             </flux:table.cell>
-                            <flux:table.cell>Rp {{ number_format($row->nominal_rutin_saat_ini, 0, ',', '.') }}</flux:table.cell>
-                            <flux:table.cell class="font-bold text-blue-600">Rp {{ number_format($row->nominal_baru_diajukan, 0, ',', '.') }}</flux:table.cell>
+                            <flux:table.cell>Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</flux:table.cell>
+                            <flux:table.cell class="font-bold text-blue-600">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-center gap-2">
                                     <flux:button size="sm" variant="subtle" icon="eye" wire:click="detailPengajuan({{ $row->id }})" x-on:click="$flux.modal('detail-pengajuan').show()">Detail</flux:button>
@@ -162,22 +166,22 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Perubahan Simpanan Sukar
             <div class="mt-6 flex flex-col gap-6">
                 <div class="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
                     <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {{ substr($selectedPengajuan->user->nama_anggota ?? 'A', 0, 1) }}
+                        {{ substr($selectedPengajuan->employee->nama_lengkap ?? 'A', 0, 1) }}
                     </div>
                     <div>
-                        <flux:heading size="md">{{ $selectedPengajuan->user->nama_anggota ?? 'Unknown' }}</flux:heading>
-                        <flux:text class="text-sm text-zinc-500">{{ $selectedPengajuan->user->username ?? '-' }} • {{ $selectedPengajuan->user->seksi ?? '-' }}</flux:text>
+                        <flux:heading size="md">{{ $selectedPengajuan->employee->nama_lengkap ?? 'Unknown' }}</flux:heading>
+                        <flux:text class="text-sm text-zinc-500">{{ $selectedPengajuan->employee->user->username ?? '-' }} • {{ $selectedPengajuan->employee->seksi ?? '-' }}</flux:text>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-y-4 gap-x-6">
                     <div>
                         <flux:text class="text-sm font-medium text-zinc-500 mb-1">Nominal Lama</flux:text>
-                        <flux:text class="text-lg font-medium text-zinc-800 dark:text-zinc-200">Rp {{ number_format($selectedPengajuan->nominal_rutin_saat_ini, 0, ',', '.') }}</flux:text>
+                        <flux:text class="text-lg font-medium text-zinc-800 dark:text-zinc-200">Rp {{ number_format($selectedPengajuan->nominal_lama, 0, ',', '.') }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-sm font-medium text-zinc-500 mb-1">Nominal Baru (Diajukan)</flux:text>
-                        <flux:text class="text-lg font-bold text-blue-600 dark:text-blue-400">Rp {{ number_format($selectedPengajuan->nominal_baru_diajukan, 0, ',', '.') }}</flux:text>
+                        <flux:text class="text-lg font-bold text-blue-600 dark:text-blue-400">Rp {{ number_format($selectedPengajuan->nominal_baru, 0, ',', '.') }}</flux:text>
                     </div>
                 </div>
 

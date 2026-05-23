@@ -50,4 +50,14 @@ class Employee extends Model
     {
         return $this->morphOne(User::class, 'userable');
     }
+
+    public function pengajuanPerubahanPotonganPayroll(): HasMany
+    {
+        return $this->hasMany(PengajuanPerubahanPotonganPayroll::class);
+    }
+
+    public function potonganPayrollEmployee(): HasMany
+    {
+        return $this->hasMany(PotonganPayrollEmployee::class);
+    }
 }

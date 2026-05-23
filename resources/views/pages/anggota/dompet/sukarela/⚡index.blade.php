@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PengajuanPerubahanPotonganPayroll;
 use App\Models\PotonganPayrollEmployee;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -11,6 +12,7 @@ use Midtrans\CoreApi;
 use App\Models\SimpananSukarelaPengaturan;
 use App\Models\TransaksiMutasi;
 use App\Models\TransaksiMutasiQris;
+use Carbon\Carbon;
 use Flux\Flux;
 
 new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extends Component
@@ -18,6 +20,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
     use WithPagination;
 
     public $search = '';
+    public $userId;
     public $saldoSukarela = 0;
     public $nominalBaru = '';
     public $nominalSaatIni = 0;
@@ -25,54 +28,54 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
 
     public function mount()
     {
-       $this->getDataSimpananUser();
+        $this->userId = auth('web')->user()->userable->id;
+        $this->getDataSimpananUser();
     }
 
     #[Computed]
     public function getDataSimpananUser() {
-        $userId = auth('web')->user()->id;
+        return $this->saldoSukarela;
+    }
 
-        $getData = PotonganPayrollEmployee::where('user_id', $userId)->first();
+    #[Computed]
+    public function getPengajuanPending()
+    {
+        $this->pengajuanPending = PengajuanPerubahanPotonganPayroll::where('jenis_potongan', 'simpanan_sukarela')->where('employee_id', $this->userId)->where('status', 'pending')->count();
+        return $this->pengajuanPending;
+    }
 
-        if(!empty($getData)) {
-            $this->saldoSukarela = $getData->saldo_sukarela ?? 0;
-            $this->nominalSaatIni = $getData->nominal_rutin_saat_ini ?? 0;
+    #[Computed]
+    public function getNominalSaatIni()
+    {
+        $tanggalSekarang = \Carbon\Carbon::now()->format('Y-m-d');
+        $getData = PotonganPayrollEmployee::where('jenis_potongan', 'simpanan_sukarela')->where('employee_id', $this->userId)->where('tanggal_mulai_berlaku', '<=', $tanggalSekarang)->latest()->first();
 
-            if($getData->status_persetujuan === 'pending_approval') {
-                $this->pengajuanPending = 1;
-            } else {
-                $this->pengajuanPending = 0;
-            }
-        } else {
-            $this->saldoSukarela = 0;
-            $this->nominalSaatIni = 0;
-            $this->pengajuanPending = 0;
-        }
+        if(!empty($getData)) $this->nominalSaatIni = $getData->nominal;
+        else $this->nominalSaatIni = 0;
+
+        return $this->nominalSaatIni;
     }
 
     public function submitUbahSetoran()
     {
-        $userId = auth('web')->user()->id;
-
-        $latestSettings = PotonganPayrollEmployee::where('user_id', $userId)->first();
-
-        if(!empty($latestSettings)) {
-            $latestSettings->fill([
-                'nominal_baru_diajukan' => $this->nominalBaru,
-                'status_persetujuan' => 'pending_approval',
-            ]);
-            $latestSettings->save();
-        } else {
-            PotonganPayrollEmployee::create([
-                'user_id' => $userId,
-                'nominal_rutin_saat_ini' => 0,
-                'nominal_baru_diajukan' => $this->nominalBaru,
-                'status_persetujuan' => 'pending_approval'
-            ]);
-        }
+        $tanggalBerlaku = Carbon::now()->addMonths(1)->firstOfMonth()->format('Y-m-d'); // Berlaku 1 bulan setelahnya
+        
+        PengajuanPerubahanPotonganPayroll::create([
+            'employee_id' => $this->userId,
+            'jenis_potongan' => 'simpanan_sukarela',
+            'nominal_lama' => $this->nominalSaatIni,
+            'nominal_baru' => (int) $this->nominalBaru,
+            'status' => 'pending',
+            'tanggal_berlaku' => $tanggalBerlaku,
+            'diajukan_oleh' => auth('web')->user()->id,
+            'tanggal_pengajuan' => Carbon::now()->format('Y-m-d'),
+        ]);
 
         $this->reset('nominalBaru');
         $this->getDataSimpananUser();
+        $this->getNominalSaatIni();
+        $this->getPengajuanPending();
+        
         Flux::modal('konfirmasi-ubah-setoran')->close();
         Flux::modal('sukses-ubah-setoran')->show();
     }

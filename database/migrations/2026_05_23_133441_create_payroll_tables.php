@@ -58,12 +58,12 @@ return new class extends Migration
 
         /*
         |--------------------------------------------------------------------------
-        | POTONGAN PAYROLL PEGAWAI (RECURRING)
+        | POTONGAN PAYROLL employee (RECURRING)
         |--------------------------------------------------------------------------
         | Potongan rutin / tetap bulanan
         */
 
-        Schema::create('potongan_payroll_pegawai', function (Blueprint $table) {
+        Schema::create('potongan_payroll_employee', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('employee_id')
@@ -92,18 +92,18 @@ return new class extends Migration
 
         /*
         |--------------------------------------------------------------------------
-        | PENGATURAN PPOB PEGAWAI
+        | PENGATURAN PPOB employee
         |--------------------------------------------------------------------------
         */
 
-        Schema::create('pengaturan_ppob_pegawai', function (Blueprint $table) {
+        Schema::create('pengaturan_ppob_employee', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('employee_id')
                 ->constrained('employees')
                 ->cascadeOnDelete();
 
-            $table->string('jenis_ppob');
+            $table->string('jenis_ppob'); // listrik, pdam, internet, dll
 
             $table->string('nomor_pelanggan');
 
@@ -115,13 +115,13 @@ return new class extends Migration
         
         /*
         |--------------------------------------------------------------------------
-        | TAGIHAN PAYROLL PEGAWAI
+        | TAGIHAN PAYROLL employee
         |--------------------------------------------------------------------------
         | Semua tagihan payroll yang sifatnya transactional
         | dan tidak tetap nominalnya
         */
 
-        Schema::create('tagihan_payroll_pegawai', function (Blueprint $table) {
+        Schema::create('tagihan_payroll_employee', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('employee_id')
@@ -156,11 +156,11 @@ return new class extends Migration
 
         /*
         |--------------------------------------------------------------------------
-        | PAYROLL PEGAWAI
+        | PAYROLL employee
         |--------------------------------------------------------------------------
         */
 
-        Schema::create('payroll_pegawai', function (Blueprint $table) {
+        Schema::create('payroll_employee', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('employee_id')
@@ -189,15 +189,15 @@ return new class extends Migration
 
         /*
         |--------------------------------------------------------------------------
-        | DETAIL PAYROLL PEGAWAI
+        | DETAIL PAYROLL employee
         |--------------------------------------------------------------------------
         */
 
-        Schema::create('detail_payroll_pegawai', function (Blueprint $table) {
+        Schema::create('detail_payroll_employee', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('payroll_employee_id')
-                ->constrained('payroll_pegawai')
+                ->constrained('payroll_employee')
                 ->cascadeOnDelete();
 
             $table->enum('jenis_potongan', [
@@ -223,11 +223,11 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('detail_payroll_pegawai');
-        Schema::dropIfExists('payroll_pegawai');
-        Schema::dropIfExists('tagihan_payroll_pegawai');
-        Schema::dropIfExists('pengaturan_ppob_pegawai');
-        Schema::dropIfExists('potongan_payroll_pegawai');
+        Schema::dropIfExists('detail_payroll_employee');
+        Schema::dropIfExists('payroll_employee');
+        Schema::dropIfExists('tagihan_payroll_employee');
+        Schema::dropIfExists('pengaturan_ppob_employee');
+        Schema::dropIfExists('potongan_payroll_employee');
         Schema::dropIfExists('pengajuan_perubahan_potongan_payroll');
     }
 };
