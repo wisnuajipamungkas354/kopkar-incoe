@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PotonganPayrollEmployee;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -31,7 +32,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
     public function getDataSimpananUser() {
         $userId = auth('web')->user()->id;
 
-        $getData = SimpananSukarelaPengaturan::where('user_id', $userId)->first();
+        $getData = PotonganPayrollEmployee::where('user_id', $userId)->first();
 
         if(!empty($getData)) {
             $this->saldoSukarela = $getData->saldo_sukarela ?? 0;
@@ -53,7 +54,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
     {
         $userId = auth('web')->user()->id;
 
-        $latestSettings = SimpananSukarelaPengaturan::where('user_id', $userId)->first();
+        $latestSettings = PotonganPayrollEmployee::where('user_id', $userId)->first();
 
         if(!empty($latestSettings)) {
             $latestSettings->fill([
@@ -62,7 +63,7 @@ new #[Layout('layouts::anggota', ['title' => 'Simpanan Sukarela'])] class extend
             ]);
             $latestSettings->save();
         } else {
-            SimpananSukarelaPengaturan::create([
+            PotonganPayrollEmployee::create([
                 'user_id' => $userId,
                 'nominal_rutin_saat_ini' => 0,
                 'nominal_baru_diajukan' => $this->nominalBaru,
