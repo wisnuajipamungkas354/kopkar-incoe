@@ -62,6 +62,7 @@
                     <flux:sidebar.item wire:navigate href="#">Pengajuan Pinjaman</flux:sidebar.item>
                     <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/penarikan-saldo') }}">Pengajuan Penarikan</flux:sidebar.item>
                     <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/simpanan-sukarela') }}">Pengajuan Perubahan SS</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/lazis') }}">Pengajuan Perubahan LAZIS</flux:sidebar.item>
                     <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/registrasi-anggota') }}">Pendaftaran Anggota</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

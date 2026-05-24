@@ -27,6 +27,8 @@ return new class extends Migration
                 'lazis',
             ]);
 
+            $table->string('sub_jenis_potongan')->nullable();
+
             $table->decimal('nominal_lama', 15, 2)->default(0);
             $table->decimal('nominal_baru', 15, 2);
 
@@ -73,8 +75,10 @@ return new class extends Migration
             $table->enum('jenis_potongan', [
                 'simpanan_wajib',
                 'simpanan_sukarela',
-                'lazis',
+                'lazis'
             ]);
+
+            $table->string('sub_jenis_potongan')->nullable();
 
             $table->decimal('nominal', 15, 2);
 
@@ -134,11 +138,13 @@ return new class extends Migration
                 'toko',
                 'pinjaman',
                 'pembiayaan',
+                'simpanan_sukarela',
+                'lazis',
             ]);
 
             $table->unsignedBigInteger('referensi_id')->nullable();
 
-            
+
             $table->unsignedTinyInteger('periode_bulan');
             $table->year('periode_tahun');
 
@@ -214,6 +220,8 @@ return new class extends Migration
                 'pembiayaan',
                 'toko',
             ]);
+
+            $table->string('sub_jenis_potongan')->nullable();
 
             $table->unsignedBigInteger('referensi_id')->nullable();
 
