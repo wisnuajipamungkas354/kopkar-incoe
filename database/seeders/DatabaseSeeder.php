@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\KoperasiManagement;
 use App\Models\KoperasiMember;
 use App\Models\KoperasiStaff;
+use App\Models\NamaBank;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +18,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create nama_bank records
+        $banks = [
+            ['kode_bank' => 'BCA', 'nama_bank' => 'Bank Central Asia'],
+            ['kode_bank' => 'BRI', 'nama_bank' => 'Bank Rakyat Indonesia'],
+            ['kode_bank' => 'BNI', 'nama_bank' => 'Bank Negara Indonesia'],
+            ['kode_bank' => 'BTN', 'nama_bank' => 'Bank Tabungan Negara'],
+            ['kode_bank' => 'BSI', 'nama_bank' => 'Bank Syariah Indonesia'],
+            ['kode_bank' => 'BJB', 'nama_bank' => 'Bank Jawa Barat'],
+            ['kode_bank' => 'MANDIRI', 'nama_bank' => 'Bank Mandiri'],
+            ['kode_bank' => 'CIMB', 'nama_bank' => 'CIMB Niaga'],
+        ];
+
+        NamaBank::insert($banks);
+
         /*
         |--------------------------------------------------------------------------
         | EMPLOYEES

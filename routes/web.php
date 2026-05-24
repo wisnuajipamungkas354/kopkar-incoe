@@ -38,6 +38,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('employee', 'pages::admin.master-data.employee.index');
         Route::livewire('employee/create', 'pages::admin.master-data.employee.create');
         Route::livewire('employee/{id}/edit', 'pages::admin.master-data.employee.edit');
+        Route::livewire('nama-bank', 'pages::admin.nama-bank.index');
         Route::livewire('simpanan-sukarela', 'pages::admin.simpanan-sukarela.index');
         Route::livewire('ppob', 'pages::admin.ppob.index');
         Route::livewire('lazis', 'pages::admin.lazis.index');

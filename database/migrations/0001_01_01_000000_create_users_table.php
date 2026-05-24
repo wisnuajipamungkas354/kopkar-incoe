@@ -82,9 +82,7 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             */
             $table->string('nama_ahli_waris')->nullable();
-
             $table->string('hubungan_ahli_waris', 100)->nullable();
-
             $table->string('hubungan_lainnya')->nullable();
 
             $table->timestamps();
