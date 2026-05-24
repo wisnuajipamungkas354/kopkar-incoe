@@ -61,7 +61,7 @@ new #[Layout('layouts::admin')] class extends Component
         ]);
 
         Flux::modal('add-modal')->close();
-        Flux::toast(['text' => 'Data bank berhasil ditambahkan.', 'variant' => 'success']);
+        Flux::toast(text: 'Data bank berhasil ditambahkan.', variant: 'success');
         $this->reset(['kodeBank', 'namaBank']);
     }
 
@@ -89,7 +89,7 @@ new #[Layout('layouts::admin')] class extends Component
         ]);
 
         Flux::modal('edit-modal')->close();
-        Flux::toast(['text' => 'Data bank berhasil diperbarui.', 'variant' => 'success']);
+        Flux::toast(text: 'Data bank berhasil diperbarui.', variant: 'success');
     }
 
     public function delete($id)
@@ -98,7 +98,7 @@ new #[Layout('layouts::admin')] class extends Component
 
         if ($bank) {
             $bank->delete();
-            Flux::toast(['text' => 'Data bank berhasil dihapus.', 'variant' => 'success']);
+            Flux::toast(text: 'Data bank berhasil dihapus.', variant: 'success');
         }
     }
 };
@@ -108,7 +108,7 @@ new #[Layout('layouts::admin')] class extends Component
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
             <flux:heading size="xl" level="1">Master Nama Bank</flux:heading>
-            <flux:text class="mt-2 text-base">Kelola daftar bank penerima transfer/pencairan</flux:text>
+            <flux:text class="mt-2 text-base">Kelola daftar nama bank</flux:text>
         </div>
         <flux:button wire:click="openAddModal" variant="primary" icon="plus">Tambah Bank</flux:button>
     </div>
@@ -118,7 +118,7 @@ new #[Layout('layouts::admin')] class extends Component
     <flux:card class="flex flex-col mt-3">
         <div class="flex flex-col sm:flex-row sm:justify-between gap-4">
             <div class="flex items-center gap-2">
-                <flux:heading size="md">Daftar Bank</flux:heading>
+                <flux:heading size="md">Daftar Nama Bank</flux:heading>
             </div>
             <flux:input size="sm" class="max-w-md w-full sm:w-72" placeholder="Cari kode atau nama bank..." icon="magnifying-glass" wire:model.live.debounce.300ms="search" />
         </div>
@@ -139,14 +139,9 @@ new #[Layout('layouts::admin')] class extends Component
                             <flux:table.cell>{{ $row->id }}</flux:table.cell>
                             <flux:table.cell class="font-mono text-zinc-900 dark:text-white">{{ $row->kode_bank }}</flux:table.cell>
                             <flux:table.cell class="font-medium text-zinc-900 dark:text-white">{{ $row->nama_bank }}</flux:table.cell>
-                            <flux:table.cell>
-                                <flux:dropdown>
-                                    <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom"></flux:button>
-                                    <flux:menu>
-                                        <flux:menu.item icon="pencil-square" wire:click="edit({{ $row->id }})">Edit</flux:menu.item>
-                                        <flux:menu.item icon="trash" variant="danger" wire:click="delete({{ $row->id }})" wire:confirm="Apakah Anda yakin ingin menghapus bank ini?">Hapus</flux:menu.item>
-                                    </flux:menu>
-                                </flux:dropdown>
+                            <flux:table.cell class="flex gap-2 justify-end">
+                                <flux:button variant="ghost" size="sm" icon="pencil-square" wire:click="edit({{ $row->id }})">Edit</flux:button>
+                                <flux:button variant="ghost" size="sm" icon="trash" variant="danger" wire:click="delete({{ $row->id }})" wire:confirm="Apakah Anda yakin ingin menghapus nama bank ini?">Hapus</flux:button>
                             </flux:table.cell>
                         </flux:table.row>
                     @empty

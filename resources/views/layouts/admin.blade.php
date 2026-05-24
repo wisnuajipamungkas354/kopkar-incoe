@@ -47,6 +47,7 @@
                 <flux:sidebar.item icon="document-text" :badge="$pendingTxCount > 0 ? $pendingTxCount : null" href="{{ url('/admin/transaksi') }}" wire:navigate :current="request()->is('admin/transaksi')">Transaksi</flux:sidebar.item>
                 <flux:sidebar.item icon="users" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate :current="request()->is('admin/anggota')">Anggota</flux:sidebar.item>
                 <flux:sidebar.item icon="briefcase" href="{{ url('/admin/employee') }}" wire:navigate :current="request()->is('admin/employee') || request()->is('admin/employee/*')">Karyawan</flux:sidebar.item>
+                <flux:sidebar.item icon="user-group" href="{{ url('/admin/koperasi-staff') }}" wire:navigate :current="request()->is('admin/koperasi-staff') || request()->is('admin/koperasi-staff/*')">Staff Koperasi</flux:sidebar.item>
                 <flux:sidebar.item icon="credit-card" href="{{ url('/admin/nama-bank') }}" wire:navigate :current="request()->is('admin/nama-bank')">Nama Bank</flux:sidebar.item>
                 
                 <flux:sidebar.item icon="wallet" href="{{ url('/admin/simpanan-sukarela') }}" wire:navigate :current="request()->is('admin/simpanan-sukarela')">Simpanan Sukarela</flux:sidebar.item>

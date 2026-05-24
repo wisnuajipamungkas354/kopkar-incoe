@@ -10,7 +10,7 @@ class KoperasiStaff extends Model
     protected $table = 'koperasi_staff';
 
     protected $fillable = [
-        'kode_staff',
+        'npk',
         'nama',
         'jk',
         'tempat_lahir',
