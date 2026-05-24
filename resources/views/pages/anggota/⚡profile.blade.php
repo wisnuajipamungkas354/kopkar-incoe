@@ -113,7 +113,7 @@ new #[Layout('layouts::anggota')] class extends Component
             }
         }
 
-        $user->refresh();
+        $this->refresh();
         $this->reset(['password', 'password_confirmation']);
 
         session()->flash('status', 'Profil Anda berhasil diperbarui.');
@@ -173,12 +173,15 @@ new #[Layout('layouts::anggota')] class extends Component
                         @php
                             $status = auth()->user()->userable->koperasiMember->status ?? 'pending';
                             $color = match($status) {
-                                'active' => 'success',
-                                'pending' => 'warning',
-                                default => 'danger'
+                                'active' => 'emerald',
+                                'pending' => 'amber',
+                                default => 'red'
                             };
                         @endphp
-                        <flux:badge :variant="$color" size="sm">{{ ucfirst($status) }}</flux:badge>
+                        <flux:badge color="{{ $color }}" size="sm">{{ ucfirst($status) }}</flux:badge>
+                    </div>
+                    <div>
+                        <flux:button size="sm" variant="primary" href="{{ url('/logout') }}" icon="arrow-right-start-on-rectangle" class="w-full">Logout</flux:button>
                     </div>
                 </div>
             </flux:card>

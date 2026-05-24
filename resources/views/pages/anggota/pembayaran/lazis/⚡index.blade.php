@@ -137,8 +137,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran LAZIS'])] class extends
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <flux:heading size="xl" level="1">Lembaga Amil Zakat, Infaq, dan Shadaqah (LAZIS)</flux:heading>
-            <flux:text class="mt-2 text-base">Layanan penyaluran dan riwayat pembayaran Zakat, Infaq, serta Shadaqah anggota.</flux:text>
+            <flux:heading size="xl" level="1">Lazis</flux:heading>
+            <flux:text class="mt-2 text-base">Layanan penyaluran dan riwayat pembayaran Zakat, Infaq, serta Shodaqah anggota.</flux:text>
         </div>
         <div class="flex gap-2 mt-4 sm:mt-0">
             <flux:modal.trigger name="ubah-setoran">
@@ -183,8 +183,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran LAZIS'])] class extends
                         <flux:icon name="hand-raised" variant="solid" class="w-6 h-6" />
                     </div>
                     <div>
-                        <flux:heading size="lg">Zakat Profesi / Maal</flux:heading>
-                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">Kewajiban mensucikan pendapatan bulanan Anda (potong gaji).</flux:text>
+                        <flux:heading size="lg">Zakat</flux:heading>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">Kewajiban mensucikan pendapatan bulanan Anda.</flux:text>
                     </div>
                 </div>
                 <flux:separator variant="subtle" />
@@ -211,7 +211,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran LAZIS'])] class extends
                     </div>
                     <div>
                         <flux:heading size="lg">Infaq & Shadaqah</flux:heading>
-                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">Penyaluran dana kebajikan sukarela bulanan (potong gaji).</flux:text>
+                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">Penyaluran dana kebajikan sukarela bulanan.</flux:text>
                     </div>
                 </div>
                 <flux:separator variant="subtle" />
@@ -310,7 +310,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran LAZIS'])] class extends
             <flux:field>
                 <flux:label>Pilih Program LAZIS</flux:label>
                 <flux:select wire:model.live="jenisLazisPilihan">
-                    <flux:select.option value="zakat">Zakat Profesi / Maal</flux:select.option>
+                    <flux:select.option value="zakat">Zakat</flux:select.option>
                     <flux:select.option value="infaq_shodaqoh">Infaq & Shadaqah</flux:select.option>
                 </flux:select>
             </flux:field>

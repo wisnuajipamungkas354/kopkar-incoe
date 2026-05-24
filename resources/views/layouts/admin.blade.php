@@ -47,6 +47,7 @@
                 <flux:sidebar.item icon="document-text" :badge="$pendingTxCount > 0 ? $pendingTxCount : null" href="{{ url('/admin/transaksi') }}" wire:navigate :current="request()->is('admin/transaksi')">Transaksi</flux:sidebar.item>
                 
                 <flux:sidebar.item icon="users" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate :current="request()->is('admin/anggota')">Anggota</flux:sidebar.item>
+                <flux:sidebar.item icon="briefcase" href="{{ url('/admin/employee') }}" wire:navigate :current="request()->is('admin/employee') || request()->is('admin/employee/*')">Karyawan</flux:sidebar.item>
                 
                 <flux:sidebar.item icon="wallet" href="{{ url('/admin/simpanan-sukarela') }}" wire:navigate :current="request()->is('admin/simpanan-sukarela')">Simpanan Sukarela</flux:sidebar.item>
                 <flux:sidebar.item icon="arrow-up-tray" href="{{ url('/admin/tarik-saldo') }}" wire:navigate :current="request()->is('admin/tarik-saldo')">Tarik Saldo</flux:sidebar.item>
@@ -59,10 +60,11 @@
                 </flux:sidebar.group>
                 
                 <flux:sidebar.group expandable icon="document-check" heading="Persetujuan" class="grid">
-                    <flux:sidebar.item wire:navigate href="#">Pengajuan Pinjaman</flux:sidebar.item>
-                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/penarikan-saldo') }}">Pengajuan Penarikan</flux:sidebar.item>
-                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/simpanan-sukarela') }}">Pengajuan Perubahan SS</flux:sidebar.item>
-                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/lazis') }}">Pengajuan Perubahan LAZIS</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/pembiayaan') }}">Pembiayaan</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/pinjaman') }}">Pinjaman</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/penarikan-saldo') }}">Penarikan</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/simpanan-sukarela') }}">Perubahan SS</flux:sidebar.item>
+                    <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/lazis') }}">Perubahan LAZIS</flux:sidebar.item>
                     <flux:sidebar.item wire:navigate href="{{ url('admin/persetujuan/registrasi-anggota') }}">Pendaftaran Anggota</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

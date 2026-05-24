@@ -35,6 +35,9 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('anggota/create', 'pages::admin.anggota.create');
         Route::livewire('anggota/{id}/edit', 'pages::admin.anggota.edit');
         Route::livewire('anggota/{id}', 'pages::admin.anggota.show');
+        Route::livewire('employee', 'pages::admin.master-data.employee.index');
+        Route::livewire('employee/create', 'pages::admin.master-data.employee.create');
+        Route::livewire('employee/{id}/edit', 'pages::admin.master-data.employee.edit');
         Route::livewire('simpanan-sukarela', 'pages::admin.simpanan-sukarela.index');
         Route::livewire('ppob', 'pages::admin.ppob.index');
         Route::livewire('lazis', 'pages::admin.lazis.index');
@@ -42,6 +45,8 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('persetujuan/simpanan-sukarela', 'pages::admin.persetujuan.simpanan-sukarela.index');
         Route::livewire('persetujuan/penarikan-saldo', 'pages::admin.persetujuan.penarikan-saldo.index');
         Route::livewire('persetujuan/lazis', 'pages::admin.persetujuan.lazis.index');
+        Route::livewire('persetujuan/pembiayaan', 'pages::admin.persetujuan.pembiayaan.index');
+        Route::livewire('persetujuan/pinjaman', 'pages::admin.persetujuan.pinjaman.index');
     });
     // Rute untuk anggota
     Route::group(['prefix' => 'anggota', 'middleware' => ['role:anggota']], function () {
@@ -53,8 +58,8 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('tarik-saldo', 'pages::anggota.dompet.tarik-saldo.index');
         Route::livewire('lazis', 'pages::anggota.pembayaran.lazis.index');
         Route::livewire('ppob', 'pages::anggota.pembayaran.ppob.index');
-        Route::livewire('pembiayaan-pinjaman', 'pages::anggota.dompet.pembiayaan-pinjaman.index');
-        Route::livewire('pembiayaan-pinjaman/pengajuan', 'pages::anggota.dompet.pembiayaan-pinjaman.pengajuan');
+        Route::livewire('pembiayaan-pinjaman', 'pages::anggota.pembiayaan-pinjaman.index');
+        Route::livewire('pembiayaan-pinjaman/pengajuan', 'pages::anggota.pembiayaan-pinjaman.pengajuan');
     });
 });
 

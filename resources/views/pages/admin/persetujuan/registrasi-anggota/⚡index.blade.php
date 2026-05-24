@@ -14,7 +14,7 @@ use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Mail;
 
-new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] class extends Component
+new #[Layout('layouts::admin', ['title' => 'Persetujuan Pendaftaran Anggota'])] class extends Component
 {
     use WithPagination;
 
@@ -139,7 +139,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Registrasi Anggota'])] c
 <div>
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
-            <flux:heading size="xl" level="1">Persetujuan Registrasi Anggota</flux:heading>
+            <flux:heading size="xl" level="1">Persetujuan Pendaftaran Anggota</flux:heading>
             <flux:text class="mt-2 text-base text-zinc-500">Verifikasi dan persetujuan pendaftaran anggota koperasi baru.</flux:text>
         </div>
     </div>
