@@ -41,6 +41,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('koperasi-staff', 'pages::admin.master-data.koperasi-staff.index');
         Route::livewire('koperasi-staff/create', 'pages::admin.master-data.koperasi-staff.create');
         Route::livewire('koperasi-staff/{id}/edit', 'pages::admin.master-data.koperasi-staff.edit');
+        Route::livewire('koperasi-management', 'pages::admin.koperasi-management.index');
         Route::livewire('nama-bank', 'pages::admin.nama-bank.index');
         Route::livewire('simpanan-sukarela', 'pages::admin.simpanan-sukarela.index');
         Route::livewire('ppob', 'pages::admin.ppob.index');
@@ -51,6 +52,9 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('persetujuan/lazis', 'pages::admin.persetujuan.lazis.index');
         Route::livewire('persetujuan/pembiayaan', 'pages::admin.persetujuan.pembiayaan.index');
         Route::livewire('persetujuan/pinjaman', 'pages::admin.persetujuan.pinjaman.index');
+        Route::livewire('pinjaman', 'pages::admin.pinjaman.index');
+        Route::livewire('pinjaman/create', 'pages::admin.pinjaman.create');
+        Route::livewire('pinjaman/{id}/edit', 'pages::admin.pinjaman.edit');
     });
     // Rute untuk anggota
     Route::group(['prefix' => 'anggota', 'middleware' => ['role:anggota']], function () {

@@ -48,12 +48,13 @@
                 <flux:sidebar.item icon="users" badge="12" href="{{ url('/admin/anggota')}}" wire:navigate :current="request()->is('admin/anggota')">Anggota</flux:sidebar.item>
                 <flux:sidebar.item icon="briefcase" href="{{ url('/admin/employee') }}" wire:navigate :current="request()->is('admin/employee') || request()->is('admin/employee/*')">Karyawan</flux:sidebar.item>
                 <flux:sidebar.item icon="user-group" href="{{ url('/admin/koperasi-staff') }}" wire:navigate :current="request()->is('admin/koperasi-staff') || request()->is('admin/koperasi-staff/*')">Staff Koperasi</flux:sidebar.item>
+                <flux:sidebar.item icon="identification" href="{{ url('/admin/koperasi-management') }}" wire:navigate :current="request()->is('admin/koperasi-management') || request()->is('admin/koperasi-management/*')">Pengurus Koperasi</flux:sidebar.item>
                 <flux:sidebar.item icon="credit-card" href="{{ url('/admin/nama-bank') }}" wire:navigate :current="request()->is('admin/nama-bank')">Nama Bank</flux:sidebar.item>
                 
                 <flux:sidebar.item icon="wallet" href="{{ url('/admin/simpanan-sukarela') }}" wire:navigate :current="request()->is('admin/simpanan-sukarela')">Simpanan Sukarela</flux:sidebar.item>
                 <flux:sidebar.item icon="arrow-up-tray" href="{{ url('/admin/tarik-saldo') }}" wire:navigate :current="request()->is('admin/tarik-saldo')">Tarik Saldo</flux:sidebar.item>
 
-                <flux:sidebar.item icon="banknotes" href="{{ url('/admin/pembiayaan-pinjaman') }}" wire:navigate :current="request()->is('admin/pembiayaan-pinjaman') || request()->is('admin/pembiayaan-pinjaman/*')">Pinjaman</flux:sidebar.item>
+                <flux:sidebar.item icon="banknotes" href="{{ url('/admin/pinjaman') }}" wire:navigate :current="request()->is('admin/pinjaman') || request()->is('admin/pinjaman/*')">Pinjaman</flux:sidebar.item>
 
                 <flux:sidebar.group expandable icon="qr-code" heading="Pembayaran" class="grid">
                     <flux:sidebar.item href="{{ url('/admin/ppob') }}" wire:navigate :current="request()->is('admin/ppob')">PPOB</flux:sidebar.item>

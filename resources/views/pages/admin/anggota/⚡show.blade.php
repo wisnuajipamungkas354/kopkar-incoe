@@ -2,13 +2,13 @@
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-use App\Models\User;
+use App\Models\KoperasiMember;
 use App\Models\TransaksiMutasi;
 use App\Models\PengajuanUtama;
 
 new #[Layout('layouts::admin')] class extends Component
 {
-    public User $user;
+    public KoperasiMember $member;
     public $simpananPokok = 0;
     public $simpananWajib = 0;
     public $simpananSukarela = 0;
@@ -17,7 +17,7 @@ new #[Layout('layouts::admin')] class extends Component
 
     public function mount($id)
     {
-        $this->user = User::findOrFail($id);
+        $this->member = KoperasiMember::with(['employee', 'employee.user'])->findOrFail($id);
         
         $this->calculateSimpanan();
         $this->fetchPinjaman();
@@ -25,8 +25,14 @@ new #[Layout('layouts::admin')] class extends Component
     
     private function calculateSimpanan()
     {
+        $userId = $this->member->employee->user?->id;
+
+        if (!$userId) {
+            return;
+        }
+
         // Ambil transaksi sukses
-        $mutasi = TransaksiMutasi::where('user_id', $this->user->id)
+        $mutasi = TransaksiMutasi::where('user_id', $userId)
             ->where('status_pembayaran', 'success')
             ->get();
             
@@ -45,7 +51,7 @@ new #[Layout('layouts::admin')] class extends Component
             $mutasi->where('kategori_transaksi', 'wajib')
             ->where('jenis_transaksi', 'pencairan_dana')
             ->sum('nominal');
-                                      
+                                       
         // Hitung Saldo Sukarela
         $this->simpananSukarela = $mutasi->where('kategori_transaksi', 'sukarela')
             ->whereIn('jenis_transaksi', ['setoran_awal', 'setoran_tambahan', 'payroll_rutin', 'angsuran_bulanan'])
@@ -59,8 +65,14 @@ new #[Layout('layouts::admin')] class extends Component
     
     private function fetchPinjaman()
     {
+        $userId = $this->member->employee->user?->id;
+
+        if (!$userId) {
+            return;
+        }
+
         $this->pinjamanAktif = PengajuanUtama::with('items')
-            ->where('user_id', $this->user->id)
+            ->where('user_id', $userId)
             ->where('status_approval', 'diterima')
             ->get();
     }
@@ -73,12 +85,12 @@ new #[Layout('layouts::admin')] class extends Component
         <div class="flex items-center gap-4">
             <flux:button href="/admin/anggota" wire:navigate variant="ghost" icon="arrow-left" class="!px-2" />
             <div>
-                <flux:heading size="xl" level="1">Detail Anggota</flux:heading>
+                <flux:heading size="xl" level="1">Detail Anggota Koperasi</flux:heading>
                 <flux:text class="mt-2 text-base">Informasi profil dan riwayat keuangan anggota.</flux:text>
             </div>
         </div>
         <div class="flex gap-2">
-            <flux:button href="/admin/anggota/{{ $user->id }}/edit" wire:navigate variant="ghost" icon="pencil-square">Edit Profil</flux:button>
+            <flux:button href="/admin/anggota/{{ $member->id }}/edit" wire:navigate variant="ghost" icon="pencil-square">Edit Profil</flux:button>
         </div>
     </div>
     
@@ -93,20 +105,20 @@ new #[Layout('layouts::admin')] class extends Component
             <flux:card>
                 <div class="flex flex-col items-center text-center">
                     <div class="w-24 h-24 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                        {{ strtoupper(substr($user->nama_anggota, 0, 1)) }}
+                        {{ strtoupper(substr($member->employee->nama_lengkap ?? 'A', 0, 1)) }}
                     </div>
-                    <flux:heading size="lg">{{ $user->nama_anggota }}</flux:heading>
-                    <flux:text class="text-zinc-500">{{ $user->username }} (NPK)</flux:text>
+                    <flux:heading size="lg">{{ $member->employee->nama_lengkap ?? '-' }}</flux:heading>
+                    <flux:text class="text-zinc-500">{{ $member->employee->npk ?? '-' }} (NPK) • {{ $member->member_number }}</flux:text>
                     
                     <div class="mt-4 flex flex-wrap justify-center gap-2">
-                        @if($user->status_user == 1)
+                        @if($member->status === 'active')
                             <flux:badge color="green">Aktif</flux:badge>
                         @else
                             <flux:badge color="red">Nonaktif</flux:badge>
                         @endif
                         
-                        @if($user->join_date)
-                            <flux:badge color="zinc" icon="calendar">Bergabung: {{ date('d M Y', strtotime($user->join_date)) }}</flux:badge>
+                        @if($member->join_date)
+                            <flux:badge color="zinc" icon="calendar">Bergabung: {{ $member->join_date->format('d M Y') }}</flux:badge>
                         @endif
                     </div>
                 </div>
@@ -150,23 +162,31 @@ new #[Layout('layouts::admin')] class extends Component
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Tempat, Tanggal Lahir</flux:text>
-                        <flux:text class="font-medium">{{ $user->ext_tempat_lahir ?: '-' }}, {{ $user->tanggal_lahir ? date('d M Y', strtotime($user->tanggal_lahir)) : '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->tempat_lahir ?: '-' }}, {{ $member->employee->tanggal_lahir ? $member->employee->tanggal_lahir->format('d M Y') : '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Jenis Kelamin</flux:text>
-                        <flux:text class="font-medium">{{ $user->gender == 'L' ? 'Laki-Laki' : 'Perempuan' }}</flux:text>
+                        <flux:text class="font-medium">{{ ($member->employee->jk ?? '') === 'L' ? 'Laki-Laki' : 'Perempuan' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Pendidikan Terakhir</flux:text>
-                        <flux:text class="font-medium">{{ $user->ext_pendidikan_terakhir ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->pendidikan_terakhir ?: '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">No. WhatsApp</flux:text>
-                        <flux:text class="font-medium">{{ $user->no_telp ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->no_telp ?: '-' }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Email Akun</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->user->email ?? '-' }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Tanggal Gabung Astra</flux:text>
+                        <flux:text class="font-medium">{{ $member->join_koperasi_astra ? $member->join_koperasi_astra->format('d M Y') : '-' }}</flux:text>
                     </div>
                     <div class="sm:col-span-2">
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Alamat Lengkap</flux:text>
-                        <flux:text class="font-medium">{{ $user->ext_alamat ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->alamat ?: '-' }}</flux:text>
                     </div>
                 </div>
 
@@ -177,24 +197,28 @@ new #[Layout('layouts::admin')] class extends Component
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Bank</flux:text>
-                        <flux:text class="font-medium">{{ $user->nama_bank ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->nama_bank ?: '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Nomor Rekening</flux:text>
-                        <flux:text class="font-medium">{{ $user->no_rekening ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->no_rekening ?: '-' }}</flux:text>
                     </div>
                     <div class="sm:col-span-2">
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Nama Pemilik Rekening</flux:text>
-                        <flux:text class="font-medium">{{ $user->pemilik_no_rekening ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->nama_pemilik_rekening ?: '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Nama Ahli Waris</flux:text>
-                        <flux:text class="font-medium">{{ $user->ext_nama_ahli_waris ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->nama_ahli_waris ?: '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Hubungan Ahli Waris</flux:text>
                         <flux:text class="font-medium">
-                            {{ $user->ext_hubungan_ahli_waris === 'Lainnya' ? $user->ext_hubungan_lainnya : ($user->ext_hubungan_ahli_waris ?: '-') }}
+                            @if($member->hubungan_ahli_waris === 'Lainnya')
+                                {{ $member->hubungan_lainnya }}
+                            @else
+                                {{ ucfirst(str_replace('_', ' ', $member->hubungan_ahli_waris)) }}
+                            @endif
                         </flux:text>
                     </div>
                 </div>
