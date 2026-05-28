@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
     {
         // Create nama_bank records
         $banks = [
+            ['kode_bank' => 'CASH', 'nama_bank' => 'Cash'],
             ['kode_bank' => 'BCA', 'nama_bank' => 'Bank Central Asia'],
             ['kode_bank' => 'BRI', 'nama_bank' => 'Bank Rakyat Indonesia'],
             ['kode_bank' => 'BNI', 'nama_bank' => 'Bank Negara Indonesia'],
@@ -28,6 +29,11 @@ class DatabaseSeeder extends Seeder
             ['kode_bank' => 'BJB', 'nama_bank' => 'Bank Jawa Barat'],
             ['kode_bank' => 'MANDIRI', 'nama_bank' => 'Bank Mandiri'],
             ['kode_bank' => 'CIMB', 'nama_bank' => 'CIMB Niaga'],
+            ['kode_bank' => 'PERMATA', 'nama_bank' => 'Bank Permata'],
+            ['kode_bank' => 'DANAMON', 'nama_bank' => 'Bank Danamon'],
+            ['kode_bank' => 'MAYBANK', 'nama_bank' => 'Maybank Indonesia'],
+            ['kode_bank' => 'OCBC', 'nama_bank' => 'OCBC NISP'],
+            ['kode_bank' => 'BUKOPIN', 'nama_bank' => 'Bank Bukopin'],
         ];
 
         NamaBank::insert($banks);

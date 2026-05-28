@@ -9,4 +9,9 @@ class MutasiKasKoperasi extends Model
     protected $table = 'mutasi_kas_koperasi';
 
     protected $guarded = ['id'];
+
+    public function rekeningKoperasi()
+    {
+        return $this->belongsTo(RekeningKoperasi::class);
+    }
 }

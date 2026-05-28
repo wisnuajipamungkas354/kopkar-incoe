@@ -55,6 +55,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('pinjaman', 'pages::admin.pinjaman.index');
         Route::livewire('pinjaman/create', 'pages::admin.pinjaman.create');
         Route::livewire('pinjaman/{id}/edit', 'pages::admin.pinjaman.edit');
+        Route::livewire('mutasi-kas', 'pages::admin.mutasi-kas.index');
     });
     // Rute untuk anggota
     Route::group(['prefix' => 'anggota', 'middleware' => ['role:anggota']], function () {
@@ -62,10 +63,12 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('profile', 'pages::anggota.profile');
         Route::livewire('simpanan-pokok', 'pages::anggota.dompet.pokok.index');
         Route::livewire('simpanan-wajib', 'pages::anggota.dompet.wajib.index');
-        Route::livewire('simpanan-sukarela', 'pages::anggota.dompet.sukarela.index');
-        Route::livewire('tarik-saldo', 'pages::anggota.dompet.tarik-saldo.index');
-        Route::livewire('lazis', 'pages::anggota.pembayaran.lazis.index');
-        Route::livewire('ppob', 'pages::anggota.pembayaran.ppob.index');
+        Route::livewire('dompet', 'pages::anggota.dompet.index');
+        Route::redirect('simpanan-sukarela', 'anggota/dompet');
+        Route::redirect('tarik-saldo', 'anggota/dompet');
+        Route::livewire('pembayaran', 'pages::anggota.pembayaran.index');
+        Route::redirect('lazis', 'anggota/pembayaran');
+        Route::redirect('ppob', 'anggota/pembayaran');
         Route::livewire('pembiayaan-pinjaman', 'pages::anggota.pembiayaan-pinjaman.index');
         Route::livewire('pembiayaan-pinjaman/pengajuan', 'pages::anggota.pembiayaan-pinjaman.pengajuan');
     });

@@ -12,4 +12,9 @@ class NamaBank extends Model
         'kode_bank',
         'nama_bank',
     ];
+
+    public function rekeningKoperasi()
+    {
+        return $this->hasMany(RekeningKoperasi::class);
+    }
 }

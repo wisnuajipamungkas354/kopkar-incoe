@@ -132,25 +132,18 @@ return new class extends Migration
                 ->constrained('employees')
                 ->cascadeOnDelete();
 
-            $table->enum('jenis_tagihan', [
-                'simpanan_pokok',
-                'ppob',
-                'toko',
-                'pinjaman',
-                'pembiayaan',
-                'simpanan_sukarela',
-                'lazis',
-            ]);
+            $table->string('jenis_tagihan'); // pinjaman, pembiayaan, ppob, toko, operasional, lazis
 
-            $table->unsignedBigInteger('referensi_id')->nullable();
-
-
+            $table->string('tagihanable_type'); 
+            $table->unsignedBigInteger('tagihanable_id'); 
+            
             $table->unsignedTinyInteger('periode_bulan');
             $table->year('periode_tahun');
 
             // Payroll pemotongan
             $table->unsignedTinyInteger('periode_payroll_bulan');
             $table->year('periode_payroll_tahun');
+            
             $table->decimal('nominal', 15, 2);
 
             $table->enum('status', [

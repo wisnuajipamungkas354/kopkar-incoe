@@ -1,0 +1,1165 @@
+<?php
+
+use App\Models\PengajuanPerubahanPotonganPayroll;
+use App\Models\PotonganPayrollEmployee;
+use App\Models\DetailPayrollEmployee;
+use Livewire\Component;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\Computed;
+use Livewire\WithPagination;
+use Carbon\Carbon;
+use Flux\Flux;
+
+new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Component
+{
+    use WithPagination;
+
+    public $mainTab    = 'ppob';    // ppob | lazis
+    public $ppobTab    = 'rutin';   // rutin | tambahan
+    public $lazisTab   = 'setoran'; // setoran | pengajuan | riwayat
+    public $search     = '';
+
+    public $userId;
+    public $employeeId;
+
+    // LAZIS stats
+    public $totalLazis           = 0;
+    public $nominalSaatIniZakat  = 0;
+    public $nominalSaatIniInfaq  = 0;
+    public $pengajuanPendingZakat = 0;
+    public $pengajuanPendingInfaq = 0;
+
+    // Form ubah setoran lazis (rutin)
+    public $nominalBaru       = '';
+    public $jenisLazisPilihan = 'zakat';
+
+    // Form setoran tambahan lazis
+    public $nominalTambahan       = '';
+    public $jenisLazisTambahan    = 'zakat';
+    public $metodeTambahan        = 'payroll'; // payroll | qris
+
+    // Form PPOB
+    public $kategoriPpob    = '';
+    public $idPelangganPpob = '';
+    public $tipePpob        = 'rutin'; // rutin | tambahan
+
+    // Konfirmasi hapus PPOB
+    public $ppobHapusId   = null;
+    public $ppobHapusNama = '';
+
+    public function mount()
+    {
+        $user            = auth('web')->user();
+        $this->userId    = $user->id;
+        $this->employeeId = $user->userable->id;
+        $this->refreshStats();
+    }
+
+    public function switchMain($tab)
+    {
+        $this->mainTab = $tab;
+        $this->search  = '';
+        $this->resetPage();
+    }
+
+    public function switchPpob($tab)
+    {
+        $this->ppobTab = $tab;
+        $this->search  = '';
+        $this->resetPage();
+    }
+
+    public function switchLazis($tab)
+    {
+        $this->lazisTab = $tab;
+        $this->search   = '';
+        $this->resetPage();
+    }
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function refreshStats()
+    {
+        $this->totalLazis = DetailPayrollEmployee::join('payroll_employee', 'detail_payroll_employee.payroll_employee_id', '=', 'payroll_employee.id')
+            ->where('payroll_employee.employee_id', $this->employeeId)
+            ->where('detail_payroll_employee.jenis_potongan', 'lazis')
+            ->sum('detail_payroll_employee.nominal');
+
+        $now = Carbon::now()->format('Y-m-d');
+
+        $zakatPotongan = PotonganPayrollEmployee::where('jenis_potongan', 'lazis')
+            ->where('sub_jenis_potongan', 'zakat')
+            ->where('employee_id', $this->employeeId)
+            ->where('tanggal_mulai_berlaku', '<=', $now)
+            ->latest()->first();
+        $this->nominalSaatIniZakat = $zakatPotongan?->nominal ?? 0;
+
+        $this->pengajuanPendingZakat = PengajuanPerubahanPotonganPayroll::where('jenis_potongan', 'lazis')
+            ->where('sub_jenis_potongan', 'zakat')
+            ->where('employee_id', $this->employeeId)
+            ->where('status', 'pending')->count();
+
+        $infaqPotongan = PotonganPayrollEmployee::where('jenis_potongan', 'lazis')
+            ->where('sub_jenis_potongan', 'infaq_shodaqoh')
+            ->where('employee_id', $this->employeeId)
+            ->where('tanggal_mulai_berlaku', '<=', $now)
+            ->latest()->first();
+        $this->nominalSaatIniInfaq = $infaqPotongan?->nominal ?? 0;
+
+        $this->pengajuanPendingInfaq = PengajuanPerubahanPotonganPayroll::where('jenis_potongan', 'lazis')
+            ->where('sub_jenis_potongan', 'infaq_shodaqoh')
+            ->where('employee_id', $this->employeeId)
+            ->where('status', 'pending')->count();
+    }
+
+    // ─── PPOB Actions ─────────────────────────────────────────────
+    public function openTambahPpob($tipe = 'rutin')
+    {
+        $this->tipePpob        = $tipe;
+        $this->kategoriPpob    = '';
+        $this->idPelangganPpob = '';
+        Flux::modal('tambah-ppob')->show();
+    }
+
+    public function submitTambahPpob()
+    {
+        $this->validate([
+            'kategoriPpob'    => 'required',
+            'idPelangganPpob' => 'required|string|max:50',
+        ], [
+            'kategoriPpob.required'    => 'Kategori PPOB wajib dipilih.',
+            'idPelangganPpob.required' => 'ID Pelanggan wajib diisi.',
+        ]);
+
+        // TODO: Simpan ke DB PPOB
+        $this->reset(['kategoriPpob', 'idPelangganPpob']);
+        Flux::modal('tambah-ppob')->close();
+        Flux::modal('sukses-ppob')->show();
+    }
+
+    public function konfirmasiHapusPpob($id, $nama)
+    {
+        $this->ppobHapusId   = $id;
+        $this->ppobHapusNama = $nama;
+        Flux::modal('hapus-ppob')->show();
+    }
+
+    public function hapusPpob()
+    {
+        // TODO: Nonaktifkan PPOB di DB
+        $this->ppobHapusId   = null;
+        $this->ppobHapusNama = '';
+        Flux::modal('hapus-ppob')->close();
+        Flux::modal('sukses-hapus-ppob')->show();
+    }
+
+    // ─── LAZIS Actions ────────────────────────────────────────────
+    public function submitUbahSetoran()
+    {
+        $this->validate([
+            'nominalBaru'       => 'required|numeric|min:0',
+            'jenisLazisPilihan' => 'required|in:zakat,infaq_shodaqoh',
+        ], [
+            'nominalBaru.required' => 'Nominal baru wajib diisi.',
+            'nominalBaru.numeric'  => 'Nominal baru harus berupa angka.',
+            'nominalBaru.min'      => 'Nominal baru tidak boleh kurang dari Rp 0.',
+        ]);
+
+        $nominalLama = $this->jenisLazisPilihan === 'zakat'
+            ? $this->nominalSaatIniZakat
+            : $this->nominalSaatIniInfaq;
+
+        PengajuanPerubahanPotonganPayroll::create([
+            'employee_id'        => $this->employeeId,
+            'jenis_potongan'     => 'lazis',
+            'sub_jenis_potongan' => $this->jenisLazisPilihan,
+            'nominal_lama'       => $nominalLama,
+            'nominal_baru'       => (int) $this->nominalBaru,
+            'status'             => 'pending',
+            'tanggal_berlaku'    => Carbon::now()->addMonths(1)->firstOfMonth()->format('Y-m-d'),
+            'diajukan_oleh'      => $this->userId,
+            'tanggal_pengajuan'  => Carbon::now()->format('Y-m-d'),
+        ]);
+
+        $this->reset('nominalBaru');
+        $this->refreshStats();
+        Flux::modal('konfirmasi-ubah-setoran')->close();
+        Flux::modal('sukses-ubah-setoran')->show();
+    }
+
+    public function submitSetoranTambahan()
+    {
+        $this->validate([
+            'nominalTambahan'    => 'required|numeric|min:1000',
+            'jenisLazisTambahan' => 'required|in:zakat,infaq_shodaqoh',
+            'metodeTambahan'     => 'required|in:payroll,qris',
+        ], [
+            'nominalTambahan.required' => 'Nominal wajib diisi.',
+            'nominalTambahan.min'      => 'Nominal minimal Rp 1.000.',
+        ]);
+
+        // TODO: Proses setoran tambahan (langsung, tanpa approval)
+        $this->reset(['nominalTambahan', 'jenisLazisTambahan', 'metodeTambahan']);
+        Flux::modal('tambah-setoran-lazis')->close();
+        Flux::modal('sukses-setoran-tambahan')->show();
+    }
+
+    // ── Computed: PPOB ──────────────────────────────────────────
+    #[Computed]
+    public function daftarPpobRutin()
+    {
+        // Dummy data — ganti dengan query DB saat modul PPOB aktif
+        return collect([
+            (object)['id' => 1, 'kategori' => 'Listrik PLN', 'id_pelanggan' => '1234567890', 'tipe' => 'rutin',    'aktif' => true,  'tanggal_daftar' => '2024-01-10'],
+            (object)['id' => 2, 'kategori' => 'BPJS Kesehatan', 'id_pelanggan' => '0001234567890', 'tipe' => 'rutin', 'aktif' => true, 'tanggal_daftar' => '2024-02-15'],
+            (object)['id' => 3, 'kategori' => 'Wifi IndiHome', 'id_pelanggan' => '111222333', 'tipe' => 'rutin',   'aktif' => false, 'tanggal_daftar' => '2023-11-01'],
+        ])->when($this->search, fn($c) => $c->filter(fn($i) =>
+            stripos($i->kategori, $this->search) !== false ||
+            stripos($i->id_pelanggan, $this->search) !== false
+        ));
+    }
+
+    #[Computed]
+    public function daftarPpobTambahan()
+    {
+        // Dummy data — ganti dengan query DB
+        return collect([
+            (object)['id' => 4, 'kategori' => 'Token Listrik', 'id_pelanggan' => '9876543210', 'tipe' => 'tambahan', 'aktif' => true, 'tanggal_daftar' => '2024-05-20'],
+        ])->when($this->search, fn($c) => $c->filter(fn($i) =>
+            stripos($i->kategori, $this->search) !== false ||
+            stripos($i->id_pelanggan, $this->search) !== false
+        ));
+    }
+
+    #[Computed]
+    public function totalTagihanPpobRutin()
+    {
+        return 0; // TODO: hitung total dari DB
+    }
+
+    // ── Computed: LAZIS ─────────────────────────────────────────
+    #[Computed]
+    public function setoranAktif()
+    {
+        return PotonganPayrollEmployee::where('employee_id', $this->employeeId)
+            ->where('jenis_potongan', 'lazis')
+            ->when($this->search, fn($q) => $q->where('sub_jenis_potongan', 'like', "%{$this->search}%"))
+            ->latest()->get();
+    }
+
+    #[Computed]
+    public function daftarPengajuan()
+    {
+        return PengajuanPerubahanPotonganPayroll::where('employee_id', $this->employeeId)
+            ->where('jenis_potongan', 'lazis')
+            ->when($this->search, fn($q) => $q->where(fn($x) => $x
+                ->where('sub_jenis_potongan', 'like', "%{$this->search}%")
+                ->orWhere('status', 'like', "%{$this->search}%")
+            ))
+            ->latest()->paginate(10);
+    }
+
+    #[Computed]
+    public function riwayatLazis()
+    {
+        return DetailPayrollEmployee::select('detail_payroll_employee.*')
+            ->join('payroll_employee', 'detail_payroll_employee.payroll_employee_id', '=', 'payroll_employee.id')
+            ->where('payroll_employee.employee_id', $this->employeeId)
+            ->where('detail_payroll_employee.jenis_potongan', 'lazis')
+            ->when($this->search, fn($q) => $q->where(fn($x) => $x
+                ->where('detail_payroll_employee.sub_jenis_potongan', 'like', "%{$this->search}%")
+                ->orWhere('detail_payroll_employee.keterangan', 'like', "%{$this->search}%")
+            ))
+            ->latest('detail_payroll_employee.id')->paginate(10);
+    }
+};
+?>
+
+<div class="space-y-6">
+
+    {{-- ── Page Header ─────────────────────────────────────────── --}}
+    <div>
+        <flux:heading size="xl" level="1">Pembayaran</flux:heading>
+        <flux:subheading class="mt-1">Kelola pembayaran PPOB dan donasi LAZIS Anda.</flux:subheading>
+    </div>
+
+    <flux:separator variant="subtle" />
+
+    {{-- ── Tab Utama ────────────────────────────────────────────── --}}
+    <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+        <button wire:click="switchMain('ppob')"
+            class="pb-3 px-1 mr-6 text-sm font-semibold border-b-2 transition-all flex items-center gap-2
+                   {{ $mainTab === 'ppob'
+                      ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                      : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+            <flux:icon name="bolt" variant="outline" class="w-4 h-4" />
+            PPOB
+        </button>
+        <button wire:click="switchMain('lazis')"
+            class="pb-3 px-1 mr-6 text-sm font-semibold border-b-2 transition-all flex items-center gap-2
+                   {{ $mainTab === 'lazis'
+                      ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
+                      : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+            <flux:icon name="heart" variant="outline" class="w-4 h-4" />
+            LAZIS
+        </button>
+    </div>
+
+
+    {{-- ══════════════════════════════════════════════════════════════
+         TAB: PPOB
+    ══════════════════════════════════════════════════════════════ --}}
+    @if($mainTab === 'ppob')
+
+        {{-- Kartu Ringkasan PPOB --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {{-- Total Tagihan Rutin --}}
+            <flux:card class="flex items-center gap-4">
+                <div class="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-xl shrink-0">
+                    <flux:icon name="bolt" variant="solid" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                    <flux:text class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total Item PPOB Rutin Aktif</flux:text>
+                    <div class="text-xl font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                        {{ $this->daftarPpobRutin->where('aktif', true)->count() }} Item
+                    </div>
+                </div>
+            </flux:card>
+
+            {{-- Item PPOB Tambahan --}}
+            <flux:card class="flex items-center gap-4">
+                <div class="p-3 bg-violet-100 dark:bg-violet-900/40 rounded-xl shrink-0">
+                    <flux:icon name="plus-circle" variant="solid" class="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                    <flux:text class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">PPOB Tambahan (Pending Payroll)</flux:text>
+                    <div class="text-xl font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                        {{ $this->daftarPpobTambahan->count() }} Item
+                    </div>
+                </div>
+            </flux:card>
+        </div>
+
+        {{-- Sub-tab PPOB --}}
+        <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+            @foreach(['rutin' => 'PPOB Rutin', 'tambahan' => 'PPOB Tambahan'] as $key => $label)
+                <button wire:click="switchPpob('{{ $key }}')"
+                    class="pb-3 px-1 mr-6 text-sm font-medium border-b-2 transition-all
+                           {{ $ppobTab === $key
+                              ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                              : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
+
+        {{-- Konten PPOB --}}
+        <flux:card class="flex flex-col">
+            {{-- Header tabel --}}
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <flux:heading size="lg" level="2">
+                        {{ $ppobTab === 'rutin' ? 'Daftar PPOB Rutin' : 'Daftar PPOB Tambahan' }}
+                    </flux:heading>
+                    <flux:text class="text-xs text-zinc-400 mt-0.5">
+                        @if($ppobTab === 'rutin')
+                            Pembayaran rutin yang dipotong otomatis setiap bulan via payroll.
+                        @else
+                            Pembayaran by request, dipotong satu kali di payroll bulan berikutnya.
+                        @endif
+                    </flux:text>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <flux:input wire:model.live="search" size="sm" class="max-w-44" placeholder="Cari..." icon="magnifying-glass" />
+                    <flux:button size="sm" variant="primary" icon="plus"
+                        wire:click="openTambahPpob('{{ $ppobTab }}')">
+                        Tambah
+                    </flux:button>
+                </div>
+            </div>
+
+            <flux:separator variant="subtle" class="mt-4 mb-3" />
+
+            {{-- Daftar PPOB (mobile: card, desktop: tabel) --}}
+            @php
+                $daftarPpob = $ppobTab === 'rutin' ? $this->daftarPpobRutin : $this->daftarPpobTambahan;
+            @endphp
+
+            {{-- Mobile Card View --}}
+            <div class="sm:hidden space-y-2">
+                @forelse($daftarPpob as $row)
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0
+                                    {{ $row->aktif ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400' }}">
+                            @if(str_contains(strtolower($row->kategori), 'listrik') || str_contains(strtolower($row->kategori), 'token'))
+                                <flux:icon name="bolt" variant="solid" class="w-5 h-5" />
+                            @elseif(str_contains(strtolower($row->kategori), 'bpjs'))
+                                <flux:icon name="shield-check" variant="solid" class="w-5 h-5" />
+                            @elseif(str_contains(strtolower($row->kategori), 'wifi') || str_contains(strtolower($row->kategori), 'internet'))
+                                <flux:icon name="wifi" variant="solid" class="w-5 h-5" />
+                            @else
+                                <flux:icon name="credit-card" variant="solid" class="w-5 h-5" />
+                            @endif
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <span class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{{ $row->kategori }}</span>
+                                    <span class="block text-xs text-zinc-400 font-mono mt-0.5">{{ $row->id_pelanggan }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    @if($row->aktif)
+                                        <flux:badge color="green" size="sm">Aktif</flux:badge>
+                                    @else
+                                        <flux:badge color="zinc" size="sm">Non-Aktif</flux:badge>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-2">
+                                <span class="text-xs text-zinc-400">Daftar: {{ Carbon::parse($row->tanggal_daftar)->format('d/m/Y') }}</span>
+                                @if($row->aktif)
+                                    <button wire:click="konfirmasiHapusPpob({{ $row->id }}, '{{ $row->kategori }}')"
+                                        class="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1">
+                                        <flux:icon name="trash" class="w-3.5 h-3.5" />
+                                        Nonaktifkan
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center text-zinc-400 py-12">
+                        <flux:icon name="bolt" class="w-10 h-10 mx-auto mb-2 opacity-20" />
+                        <p class="text-sm font-medium">Belum ada PPOB {{ $ppobTab === 'rutin' ? 'Rutin' : 'Tambahan' }}.</p>
+                        <p class="text-xs mt-1">Klik tombol <strong>Tambah</strong> untuk menambahkan.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            {{-- Desktop Table View --}}
+            <div class="hidden sm:block overflow-x-auto">
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>Kategori</flux:table.column>
+                        <flux:table.column>ID Pelanggan</flux:table.column>
+                        <flux:table.column>Tgl. Daftar</flux:table.column>
+                        <flux:table.column>Status</flux:table.column>
+                        <flux:table.column></flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @forelse($daftarPpob as $row)
+                            <flux:table.row :key="$row->id">
+                                <flux:table.cell>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                                                    {{ $row->aktif ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400' }}">
+                                            @if(str_contains(strtolower($row->kategori), 'listrik') || str_contains(strtolower($row->kategori), 'token'))
+                                                <flux:icon name="bolt" variant="solid" class="w-4 h-4" />
+                                            @elseif(str_contains(strtolower($row->kategori), 'bpjs'))
+                                                <flux:icon name="shield-check" variant="solid" class="w-4 h-4" />
+                                            @elseif(str_contains(strtolower($row->kategori), 'wifi') || str_contains(strtolower($row->kategori), 'internet'))
+                                                <flux:icon name="wifi" variant="solid" class="w-4 h-4" />
+                                            @else
+                                                <flux:icon name="credit-card" variant="solid" class="w-4 h-4" />
+                                            @endif
+                                        </div>
+                                        <span class="font-medium text-sm">{{ $row->kategori }}</span>
+                                    </div>
+                                </flux:table.cell>
+                                <flux:table.cell class="font-mono text-sm text-zinc-500">{{ $row->id_pelanggan }}</flux:table.cell>
+                                <flux:table.cell class="text-zinc-400 text-sm">{{ Carbon::parse($row->tanggal_daftar)->format('d/m/Y') }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @if($row->aktif)
+                                        <flux:badge color="green" size="sm" inset="top bottom">Aktif</flux:badge>
+                                    @else
+                                        <flux:badge color="zinc" size="sm" inset="top bottom">Non-Aktif</flux:badge>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    @if($row->aktif)
+                                        <flux:button size="xs" variant="ghost" icon="trash"
+                                            wire:click="konfirmasiHapusPpob({{ $row->id }}, '{{ $row->kategori }}')"
+                                            class="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30">
+                                            Nonaktifkan
+                                        </flux:button>
+                                    @endif
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row>
+                                <flux:table.cell colspan="5" class="text-center text-zinc-400 py-10">
+                                    <flux:icon name="bolt" class="w-8 h-8 mx-auto mb-2 opacity-20" />
+                                    <p class="text-sm">Belum ada PPOB {{ $ppobTab === 'rutin' ? 'Rutin' : 'Tambahan' }}.</p>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+            </div>
+        </flux:card>
+
+        {{-- Info Box PPOB --}}
+        @if($ppobTab === 'rutin')
+            <div class="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/20 p-4 flex gap-3">
+                <flux:icon name="information-circle" class="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                    <p class="font-semibold">Ketentuan PPOB Rutin</p>
+                    <ul class="list-disc list-inside text-blue-600/80 dark:text-blue-400/80 space-y-0.5 text-xs">
+                        <li>PPOB Rutin dipotong otomatis setiap bulan melalui payroll.</li>
+                        <li>Perubahan / penambahan akan berlaku mulai payroll bulan berikutnya.</li>
+                        <li>Anda dapat menonaktifkan PPOB Rutin kapan saja.</li>
+                    </ul>
+                </div>
+            </div>
+        @else
+            <div class="rounded-xl border border-violet-100 dark:border-violet-900/40 bg-violet-50/60 dark:bg-violet-950/20 p-4 flex gap-3">
+                <flux:icon name="information-circle" class="w-5 h-5 text-violet-500 shrink-0 mt-0.5" />
+                <div class="text-sm text-violet-700 dark:text-violet-300 space-y-1">
+                    <p class="font-semibold">Ketentuan PPOB Tambahan</p>
+                    <ul class="list-disc list-inside text-violet-600/80 dark:text-violet-400/80 space-y-0.5 text-xs">
+                        <li>PPOB Tambahan bersifat tidak rutin, hanya by request.</li>
+                        <li>Dipotong satu kali di payroll bulan berikutnya.</li>
+                        <li>Dapat dinonaktifkan sebelum payroll diproses.</li>
+                    </ul>
+                </div>
+            </div>
+        @endif
+
+    @endif
+
+
+    {{-- ══════════════════════════════════════════════════════════════
+         TAB: LAZIS
+    ══════════════════════════════════════════════════════════════ --}}
+    @if($mainTab === 'lazis')
+
+        {{-- Info Kemitraan YAA --}}
+        <div class="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20">
+            <div class="w-32 h-12 shrink-0 bg-white dark:bg-zinc-800 p-2 rounded-lg shadow-sm flex items-center justify-center border border-zinc-200 dark:border-zinc-700">
+                <img src="{{ asset('img/logo-yayasan-lazis-light.png') }}" x-show="$flux.appearance === 'light'" class="object-contain max-h-8" alt="Logo Yayasan">
+                <img src="{{ asset('img/logo-yayasan-lazis-dark.png') }}"  x-show="$flux.appearance === 'dark'"  class="object-contain max-h-8" alt="Logo Yayasan">
+            </div>
+            <div class="text-center sm:text-left flex-1">
+                <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Kemitraan Lazis Yayasan Amaliah Astra (YAA)</p>
+                <p class="text-xs text-emerald-700/80 dark:text-emerald-300/70 mt-0.5">Penyaluran Zakat, Infaq, dan Sedekah diproses secara transparan melalui kerjasama resmi dengan <strong>Yayasan Amaliah Astra</strong>.</p>
+            </div>
+        </div>
+
+        {{-- Kartu Setoran Aktif --}}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {{-- Total Donasi --}}
+            <flux:card class="flex items-center gap-4">
+                <div class="p-3 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl shrink-0">
+                    <flux:icon name="heart" variant="solid" class="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                    <flux:text class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total Donasi</flux:text>
+                    <div class="text-xl font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">Rp {{ number_format($totalLazis, 0, ',', '.') }}</div>
+                </div>
+            </flux:card>
+
+            {{-- Zakat --}}
+            <flux:card class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-teal-50 dark:bg-teal-950/40 rounded-lg text-teal-600 dark:text-teal-400">
+                            <flux:icon name="hand-raised" variant="solid" class="w-4 h-4" />
+                        </div>
+                        <span class="font-semibold text-sm text-zinc-800 dark:text-zinc-200">Zakat</span>
+                    </div>
+                    @if($pengajuanPendingZakat > 0)
+                        <flux:badge color="orange" size="sm">{{ $pengajuanPendingZakat }} Pending</flux:badge>
+                    @endif
+                </div>
+                <div>
+                    <span class="text-xs text-zinc-400">Setoran bulanan</span>
+                    <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                        Rp {{ number_format($nominalSaatIniZakat, 0, ',', '.') }}<span class="text-xs font-normal text-zinc-400">/bln</span>
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <flux:button size="xs" variant="ghost" icon="pencil-square"
+                        x-on:click="$wire.set('jenisLazisPilihan', 'zakat'); $flux.modal('ubah-setoran').show()">
+                        Ubah
+                    </flux:button>
+                    <flux:button size="xs" variant="ghost" icon="plus"
+                        x-on:click="$wire.set('jenisLazisTambahan', 'zakat'); $flux.modal('tambah-setoran-lazis').show()">
+                        Tambahan
+                    </flux:button>
+                </div>
+            </flux:card>
+
+            {{-- Infaq & Shodaqoh --}}
+            <flux:card class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg text-indigo-600 dark:text-indigo-400">
+                            <flux:icon name="sparkles" variant="solid" class="w-4 h-4" />
+                        </div>
+                        <span class="font-semibold text-sm text-zinc-800 dark:text-zinc-200">Infaq & Shodaqoh</span>
+                    </div>
+                    @if($pengajuanPendingInfaq > 0)
+                        <flux:badge color="orange" size="sm">{{ $pengajuanPendingInfaq }} Pending</flux:badge>
+                    @endif
+                </div>
+                <div>
+                    <span class="text-xs text-zinc-400">Setoran bulanan</span>
+                    <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                        Rp {{ number_format($nominalSaatIniInfaq, 0, ',', '.') }}<span class="text-xs font-normal text-zinc-400">/bln</span>
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <flux:button size="xs" variant="ghost" icon="pencil-square"
+                        x-on:click="$wire.set('jenisLazisPilihan', 'infaq_shodaqoh'); $flux.modal('ubah-setoran').show()">
+                        Ubah
+                    </flux:button>
+                    <flux:button size="xs" variant="ghost" icon="plus"
+                        x-on:click="$wire.set('jenisLazisTambahan', 'infaq_shodaqoh'); $flux.modal('tambah-setoran-lazis').show()">
+                        Tambahan
+                    </flux:button>
+                </div>
+            </flux:card>
+        </div>
+
+        {{-- Sub-tab LAZIS --}}
+        <div class="flex border-b border-zinc-200 dark:border-zinc-700">
+            @php
+                $lazisTabs = [
+                    'setoran'   => 'Setoran Aktif',
+                    'pengajuan' => 'Dalam Pengajuan',
+                    'riwayat'   => 'Riwayat Transaksi',
+                ];
+            @endphp
+            @foreach($lazisTabs as $key => $label)
+                <button wire:click="switchLazis('{{ $key }}')"
+                    class="pb-3 px-1 mr-6 text-sm font-medium border-b-2 transition-all
+                           {{ $lazisTab === $key
+                              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
+                              : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+                    {{ $label }}
+                    @if($key === 'pengajuan' && ($pengajuanPendingZakat + $pengajuanPendingInfaq) > 0)
+                        <span class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-600 text-[10px] font-bold">
+                            {{ $pengajuanPendingZakat + $pengajuanPendingInfaq }}
+                        </span>
+                    @endif
+                </button>
+            @endforeach
+        </div>
+
+        {{-- Konten LAZIS --}}
+        <flux:card class="flex flex-col">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <flux:heading size="lg" level="2">{{ $lazisTabs[$lazisTab] }}</flux:heading>
+                    @if($lazisTab === 'setoran')
+                        <flux:text class="text-xs text-zinc-400 mt-0.5">Riwayat potongan payroll bulanan yang telah terdaftar.</flux:text>
+                    @elseif($lazisTab === 'pengajuan')
+                        <flux:text class="text-xs text-zinc-400 mt-0.5">Pengajuan perubahan setoran rutin yang menunggu persetujuan.</flux:text>
+                    @else
+                        <flux:text class="text-xs text-zinc-400 mt-0.5">Riwayat transaksi LAZIS yang telah diproses.</flux:text>
+                    @endif
+                </div>
+                <flux:input wire:model.live="search" size="sm" class="max-w-44 shrink-0" placeholder="Cari..." icon="magnifying-glass" />
+            </div>
+
+            <flux:separator variant="subtle" class="mt-4 mb-3" />
+
+            {{-- Tab: Setoran Aktif --}}
+            @if($lazisTab === 'setoran')
+                {{-- Mobile --}}
+                <div class="sm:hidden space-y-2">
+                    @forelse($this->setoranAktif as $row)
+                        @php
+                            $today     = Carbon::today()->format('Y-m-d');
+                            $isExpired = $row->tanggal_selesai && $row->tanggal_selesai < $today;
+                            $isPending = $row->tanggal_mulai_berlaku > $today;
+                            $isZakat   = $row->sub_jenis_potongan === 'zakat';
+                        @endphp
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0
+                                        {{ $isZakat ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400' : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400' }}">
+                                <flux:icon name="{{ $isZakat ? 'hand-raised' : 'sparkles' }}" variant="solid" class="w-5 h-5" />
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <span class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                                            {{ $isZakat ? 'Zakat' : 'Infaq & Shodaqoh' }}
+                                        </span>
+                                        <span class="block text-xs text-zinc-400 mt-0.5">Mulai {{ Carbon::parse($row->tanggal_mulai_berlaku)->translatedFormat('d F Y') }}</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal, 0, ',', '.') }}<span class="text-xs font-normal text-zinc-400">/bln</span></div>
+                                        @if($isExpired) <flux:badge color="zinc" size="sm">Non-Aktif</flux:badge>
+                                        @elseif($isPending) <flux:badge color="orange" size="sm">Menunggu</flux:badge>
+                                        @else <flux:badge color="green" size="sm">Aktif</flux:badge>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-zinc-400 py-12">
+                            <flux:icon name="heart" class="w-10 h-10 mx-auto mb-2 opacity-20" />
+                            <p class="text-sm">Tidak ada setoran LAZIS aktif.</p>
+                        </div>
+                    @endforelse
+                </div>
+                {{-- Desktop --}}
+                <flux:table class="hidden sm:table">
+                    <flux:table.columns>
+                        <flux:table.column>Program LAZIS</flux:table.column>
+                        <flux:table.column>Nominal Bulanan</flux:table.column>
+                        <flux:table.column>Mulai Berlaku</flux:table.column>
+                        <flux:table.column>Status</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @forelse($this->setoranAktif as $row)
+                            @php
+                                $today     = Carbon::today()->format('Y-m-d');
+                                $isExpired = $row->tanggal_selesai && $row->tanggal_selesai < $today;
+                                $isPending = $row->tanggal_mulai_berlaku > $today;
+                                $isZakat   = $row->sub_jenis_potongan === 'zakat';
+                            @endphp
+                            <flux:table.row :key="'a-'.$row->id">
+                                <flux:table.cell>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0
+                                                    {{ $isZakat ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400' : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400' }}">
+                                            <flux:icon name="{{ $isZakat ? 'hand-raised' : 'sparkles' }}" variant="solid" class="w-3.5 h-3.5" />
+                                        </div>
+                                        <span class="font-medium text-sm">{{ $isZakat ? 'Zakat' : 'Infaq & Shodaqoh' }}</span>
+                                    </div>
+                                </flux:table.cell>
+                                <flux:table.cell class="font-semibold">Rp {{ number_format($row->nominal, 0, ',', '.') }}<span class="text-xs font-normal text-zinc-400">/bln</span></flux:table.cell>
+                                <flux:table.cell class="text-zinc-500 text-sm">{{ Carbon::parse($row->tanggal_mulai_berlaku)->translatedFormat('d F Y') }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @if($isExpired) <flux:badge color="zinc" size="sm" inset="top bottom">Non-Aktif</flux:badge>
+                                    @elseif($isPending) <flux:badge color="orange" size="sm" inset="top bottom">Menunggu Berlaku</flux:badge>
+                                    @else <flux:badge color="green" size="sm" inset="top bottom">Aktif</flux:badge>
+                                    @endif
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row>
+                                <flux:table.cell colspan="4" class="text-center text-zinc-400 py-10">
+                                    Tidak ada setoran LAZIS aktif saat ini.
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+
+            {{-- Tab: Dalam Pengajuan --}}
+            @elseif($lazisTab === 'pengajuan')
+                {{-- Mobile --}}
+                <div class="sm:hidden space-y-2">
+                    @forelse($this->daftarPengajuan as $row)
+                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                                        {{ $row->sub_jenis_potongan === 'zakat' ? 'Zakat' : 'Infaq & Shodaqoh' }}
+                                    </span>
+                                    <span class="text-xs text-zinc-400">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</span>
+                                </div>
+                                @if($row->status === 'pending') <flux:badge color="orange" size="sm">Pending</flux:badge>
+                                @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm">Disetujui</flux:badge>
+                                @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-3 text-sm">
+                                <div>
+                                    <div class="text-[10px] text-zinc-400">Nominal Lama</div>
+                                    <div class="font-medium text-zinc-400 line-through">Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</div>
+                                </div>
+                                <flux:icon name="arrow-right" class="w-4 h-4 text-zinc-300 shrink-0" />
+                                <div>
+                                    <div class="text-[10px] text-zinc-400">Nominal Baru</div>
+                                    <div class="font-bold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-zinc-400 mt-1.5">Berlaku: {{ Carbon::parse($row->tanggal_berlaku)->translatedFormat('F Y') }}</div>
+                        </div>
+                    @empty
+                        <div class="text-center text-zinc-400 py-12">
+                            <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-20" />
+                            <p class="text-sm">Tidak ada pengajuan perubahan setoran.</p>
+                        </div>
+                    @endforelse
+                </div>
+                {{-- Desktop --}}
+                <flux:table class="hidden sm:table">
+                    <flux:table.columns>
+                        <flux:table.column>Tgl. Pengajuan</flux:table.column>
+                        <flux:table.column>Program LAZIS</flux:table.column>
+                        <flux:table.column>Nominal Lama</flux:table.column>
+                        <flux:table.column>Nominal Baru</flux:table.column>
+                        <flux:table.column>Berlaku Mulai</flux:table.column>
+                        <flux:table.column>Status</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @forelse($this->daftarPengajuan as $row)
+                            <flux:table.row :key="'p-'.$row->id">
+                                <flux:table.cell class="text-zinc-400 text-sm">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</flux:table.cell>
+                                <flux:table.cell class="font-medium text-sm">{{ $row->sub_jenis_potongan === 'zakat' ? 'Zakat' : 'Infaq & Shodaqoh' }}</flux:table.cell>
+                                <flux:table.cell class="text-zinc-400 line-through text-sm">Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</flux:table.cell>
+                                <flux:table.cell class="font-semibold">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</flux:table.cell>
+                                <flux:table.cell class="text-zinc-500 text-sm">{{ Carbon::parse($row->tanggal_berlaku)->translatedFormat('F Y') }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @if($row->status === 'pending') <flux:badge color="orange" size="sm" inset="top bottom">Pending</flux:badge>
+                                    @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm" inset="top bottom">Disetujui</flux:badge>
+                                    @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
+                                    @endif
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row>
+                                <flux:table.cell colspan="6" class="text-center text-zinc-400 py-10">
+                                    Tidak ada pengajuan perubahan setoran.
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+                <div class="mt-4">{{ $this->daftarPengajuan->links() }}</div>
+
+            {{-- Tab: Riwayat --}}
+            @else
+                {{-- Mobile --}}
+                <div class="sm:hidden space-y-2">
+                    @forelse($this->riwayatLazis as $row)
+                        @php $isZakat = $row->sub_jenis_potongan === 'zakat'; @endphp
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0
+                                        {{ $isZakat ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400' : 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400' }}">
+                                <flux:icon name="{{ $isZakat ? 'hand-raised' : 'sparkles' }}" variant="solid" class="w-5 h-5" />
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start gap-2">
+                                    <div>
+                                        <span class="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                                            {{ $isZakat ? 'Zakat' : 'Infaq & Shodaqoh' }}
+                                        </span>
+                                        <span class="block text-xs text-zinc-400 font-mono">LZS-{{ str_pad($row->id, 5, '0', STR_PAD_LEFT) }}</span>
+                                    </div>
+                                    <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 shrink-0">Rp {{ number_format($row->nominal, 0, ',', '.') }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-xs text-zinc-400">{{ $row->created_at->format('d/m/Y') }}</span>
+                                    <flux:badge color="blue" size="sm">Payroll</flux:badge>
+                                    <flux:badge color="green" size="sm">Berhasil</flux:badge>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-zinc-400 py-12">
+                            <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-20" />
+                            <p class="text-sm">Belum ada riwayat transaksi LAZIS.</p>
+                        </div>
+                    @endforelse
+                </div>
+                {{-- Desktop --}}
+                <flux:table class="hidden sm:table">
+                    <flux:table.columns>
+                        <flux:table.column>Tanggal</flux:table.column>
+                        <flux:table.column>No. Transaksi</flux:table.column>
+                        <flux:table.column>Jenis</flux:table.column>
+                        <flux:table.column>Metode</flux:table.column>
+                        <flux:table.column>Nominal</flux:table.column>
+                        <flux:table.column>Status</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @forelse($this->riwayatLazis as $row)
+                            @php $isZakat = $row->sub_jenis_potongan === 'zakat'; @endphp
+                            <flux:table.row :key="'r-'.$row->id">
+                                <flux:table.cell class="text-zinc-400 text-sm">{{ $row->created_at->format('d/m/Y') }}</flux:table.cell>
+                                <flux:table.cell class="font-mono text-xs text-zinc-400">LZS-{{ str_pad($row->id, 5, '0', STR_PAD_LEFT) }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @if($isZakat)
+                                        <flux:badge color="teal" size="sm" inset="top bottom">Zakat</flux:badge>
+                                    @else
+                                        <flux:badge color="indigo" size="sm" inset="top bottom">Infaq & Shodaqoh</flux:badge>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell><flux:badge color="blue" size="sm" inset="top bottom">Payroll</flux:badge></flux:table.cell>
+                                <flux:table.cell class="font-semibold">Rp {{ number_format($row->nominal, 0, ',', '.') }}</flux:table.cell>
+                                <flux:table.cell><flux:badge color="green" size="sm" inset="top bottom">Berhasil</flux:badge></flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row>
+                                <flux:table.cell colspan="6" class="text-center text-zinc-400 py-10">Belum ada riwayat transaksi LAZIS.</flux:table.cell>
+                            </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+                <div class="mt-4">{{ $this->riwayatLazis->links() }}</div>
+            @endif
+
+        </flux:card>
+
+        {{-- Info Box LAZIS --}}
+        <div class="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20 p-4 flex gap-3">
+            <flux:icon name="information-circle" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+            <div class="text-sm text-emerald-700 dark:text-emerald-300 space-y-1">
+                <p class="font-semibold">Ketentuan LAZIS</p>
+                <ul class="list-disc list-inside text-emerald-600/80 dark:text-emerald-400/80 space-y-0.5 text-xs">
+                    <li>Perubahan setoran rutin memerlukan persetujuan pengurus dan berlaku mulai bulan berikutnya.</li>
+                    <li>Setoran tambahan bersifat satu kali dan tidak memerlukan persetujuan (langsung diproses).</li>
+                    <li>Setoran tambahan via payroll dipotong di bulan berikutnya; via QRIS diproses segera.</li>
+                </ul>
+            </div>
+        </div>
+
+    @endif
+
+
+    {{-- ══════════════════════════════════════════════════════════════
+         MODALS – PPOB
+    ══════════════════════════════════════════════════════════════ --}}
+
+    {{-- Modal Tambah PPOB (Rutin & Tambahan) --}}
+    <flux:modal name="tambah-ppob" class="md:w-[28rem] space-y-5">
+        <div>
+            <flux:heading size="lg">
+                Tambah PPOB {{ $tipePpob === 'rutin' ? 'Rutin' : 'Tambahan' }}
+            </flux:heading>
+            <flux:text size="sm" class="mt-1 text-zinc-500">
+                @if($tipePpob === 'rutin')
+                    Pembayaran akan dipotong otomatis setiap bulan via payroll.
+                @else
+                    Pembayaran dipotong satu kali di payroll bulan berikutnya.
+                @endif
+            </flux:text>
+        </div>
+        <flux:separator variant="subtle" />
+
+        <form wire:submit="submitTambahPpob" class="flex flex-col gap-4">
+            <flux:field>
+                <flux:label>Kategori PPOB</flux:label>
+                <flux:select wire:model="kategoriPpob" placeholder="Pilih kategori...">
+                    <flux:select.option value="Listrik PLN">⚡ Listrik PLN</flux:select.option>
+                    <flux:select.option value="Token Listrik">🔌 Token Listrik</flux:select.option>
+                    <flux:select.option value="BPJS Kesehatan">🏥 BPJS Kesehatan</flux:select.option>
+                    <flux:select.option value="BPJS Ketenagakerjaan">🛡️ BPJS Ketenagakerjaan</flux:select.option>
+                    <flux:select.option value="Wifi/Internet">📶 Wifi / Internet</flux:select.option>
+                    <flux:select.option value="Air PDAM">💧 Air PDAM</flux:select.option>
+                    <flux:select.option value="Pulsa/Data">📱 Pulsa / Paket Data</flux:select.option>
+                    <flux:select.option value="Asuransi">🔒 Asuransi</flux:select.option>
+                    <flux:select.option value="Lainnya">📋 Lainnya</flux:select.option>
+                </flux:select>
+                @error('kategoriPpob') <flux:error>{{ $message }}</flux:error> @enderror
+            </flux:field>
+
+            <flux:field>
+                <flux:label>ID Pelanggan</flux:label>
+                <flux:input wire:model="idPelangganPpob" placeholder="Masukkan ID / Nomor Pelanggan" />
+                <flux:description>Nomor meteran listrik, nomor VA, nomor kartu BPJS, dll.</flux:description>
+                @error('idPelangganPpob') <flux:error>{{ $message }}</flux:error> @enderror
+            </flux:field>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <flux:modal.close><flux:button variant="ghost">Batal</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary" icon="plus">Tambahkan</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Modal Konfirmasi Hapus PPOB --}}
+    <flux:modal name="hapus-ppob" class="md:w-[24rem]">
+        <div class="flex flex-col gap-5">
+            <div class="flex items-start gap-3">
+                <div class="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-500 shrink-0">
+                    <flux:icon name="trash" class="w-5 h-5" />
+                </div>
+                <div>
+                    <flux:heading size="lg">Nonaktifkan PPOB?</flux:heading>
+                    <flux:text size="sm" class="mt-1 text-zinc-500">
+                        Anda akan menonaktifkan pembayaran <strong>{{ $ppobHapusNama }}</strong>. Pembayaran ini tidak akan diproses lagi di payroll berikutnya.
+                    </flux:text>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close><flux:button variant="ghost">Batal</flux:button></flux:modal.close>
+                <flux:button variant="danger" wire:click="hapusPpob" icon="trash">Ya, Nonaktifkan</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Modal Sukses Tambah PPOB --}}
+    <flux:modal name="sukses-ppob" class="md:w-[22rem]">
+        <div class="flex flex-col items-center justify-center gap-4 text-center py-4">
+            <div class="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-500">
+                <flux:icon name="check-circle" class="w-9 h-9" />
+            </div>
+            <flux:heading size="lg">PPOB Ditambahkan!</flux:heading>
+            <flux:text size="sm" class="text-zinc-500">
+                Pembayaran PPOB berhasil ditambahkan dan akan diproses pada payroll berikutnya.
+            </flux:text>
+            <flux:modal.close><flux:button variant="primary" class="w-full mt-1">Tutup</flux:button></flux:modal.close>
+        </div>
+    </flux:modal>
+
+    {{-- Modal Sukses Hapus PPOB --}}
+    <flux:modal name="sukses-hapus-ppob" class="md:w-[22rem]">
+        <div class="flex flex-col items-center justify-center gap-4 text-center py-4">
+            <div class="w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
+                <flux:icon name="check-circle" class="w-9 h-9" />
+            </div>
+            <flux:heading size="lg">PPOB Dinonaktifkan</flux:heading>
+            <flux:text size="sm" class="text-zinc-500">
+                Pembayaran PPOB berhasil dinonaktifkan dan tidak akan diproses di payroll berikutnya.
+            </flux:text>
+            <flux:modal.close><flux:button variant="primary" class="w-full mt-1">Tutup</flux:button></flux:modal.close>
+        </div>
+    </flux:modal>
+
+
+    {{-- ══════════════════════════════════════════════════════════════
+         MODALS – LAZIS
+    ══════════════════════════════════════════════════════════════ --}}
+
+    {{-- Modal Ubah Setoran Rutin LAZIS --}}
+    <flux:modal name="ubah-setoran" class="md:w-[28rem] space-y-5">
+        <div>
+            <flux:heading size="lg">Ubah Setoran Rutin</flux:heading>
+            <flux:text size="sm" class="mt-1 text-zinc-500">Pengajuan ini memerlukan persetujuan pengurus dan berlaku mulai bulan berikutnya.</flux:text>
+        </div>
+        <flux:separator variant="subtle" />
+        <form x-on:submit.prevent="$flux.modal('konfirmasi-ubah-setoran').show(); $flux.modal('ubah-setoran').close()" class="flex flex-col gap-4">
+            <flux:field>
+                <flux:label>Program LAZIS</flux:label>
+                <flux:select wire:model.live="jenisLazisPilihan">
+                    <flux:select.option value="zakat">Zakat</flux:select.option>
+                    <flux:select.option value="infaq_shodaqoh">Infaq & Shodaqoh</flux:select.option>
+                </flux:select>
+            </flux:field>
+
+            <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <span class="text-xs text-zinc-400">Setoran Saat Ini</span>
+                <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                    Rp {{ number_format($jenisLazisPilihan === 'zakat' ? $nominalSaatIniZakat : $nominalSaatIniInfaq, 0, ',', '.') }}
+                    <span class="text-xs font-normal text-zinc-400">/bulan</span>
+                </div>
+            </div>
+
+            <flux:field>
+                <flux:label>Nominal Baru (Rp)</flux:label>
+                <flux:input wire:model.live="nominalBaru" type="number" placeholder="Contoh: 50000" autofocus />
+                @error('nominalBaru') <flux:error>{{ $message }}</flux:error> @enderror
+            </flux:field>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <flux:modal.close><flux:button variant="ghost">Batal</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary" icon="paper-airplane">Kirim Pengajuan</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Modal Konfirmasi Ubah Setoran --}}
+    <flux:modal name="konfirmasi-ubah-setoran" class="md:w-[22rem]">
+        <div class="flex flex-col gap-5">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-full text-orange-500">
+                    <flux:icon name="exclamation-triangle" class="w-5 h-5" />
+                </div>
+                <flux:heading size="lg">Konfirmasi Perubahan</flux:heading>
+            </div>
+            <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl text-center border border-zinc-200 dark:border-zinc-800">
+                <div class="text-xs font-medium text-zinc-500 uppercase tracking-wider">Nominal Baru — {{ $jenisLazisPilihan === 'zakat' ? 'Zakat' : 'Infaq & Shodaqoh' }}</div>
+                <div class="text-2xl font-bold mt-1 text-zinc-800 dark:text-zinc-100">
+                    Rp {{ $nominalBaru ? number_format((int)$nominalBaru, 0, ',', '.') : 0 }}
+                </div>
+                <div class="text-xs text-zinc-400 mt-1">Berlaku mulai {{ Carbon::now()->addMonths(1)->translatedFormat('F Y') }}</div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button x-on:click="$flux.modal('ubah-setoran').show()" variant="ghost">Kembali</flux:button>
+                </flux:modal.close>
+                <flux:button variant="primary" color="orange" wire:click="submitUbahSetoran">Ya, Ajukan</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Modal Sukses Ubah Setoran --}}
+    <flux:modal name="sukses-ubah-setoran" class="md:w-[22rem]">
+        <div class="flex flex-col items-center justify-center gap-4 text-center py-4">
+            <div class="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-500">
+                <flux:icon name="check-circle" class="w-9 h-9" />
+            </div>
+            <flux:heading size="lg">Pengajuan Berhasil!</flux:heading>
+            <flux:text size="sm" class="text-zinc-500">
+                Perubahan setoran {{ $jenisLazisPilihan === 'zakat' ? 'Zakat' : 'Infaq & Shodaqoh' }} Anda sedang menunggu verifikasi pengurus.
+            </flux:text>
+            <flux:modal.close><flux:button variant="primary" class="w-full mt-1">Tutup</flux:button></flux:modal.close>
+        </div>
+    </flux:modal>
+
+    {{-- Modal Tambah Setoran Tambahan LAZIS --}}
+    <flux:modal name="tambah-setoran-lazis" class="md:w-[28rem] space-y-5">
+        <div>
+            <flux:heading size="lg">Setoran Tambahan</flux:heading>
+            <flux:text size="sm" class="mt-1 text-zinc-500">Setoran satu kali, tidak rutin, dan tidak memerlukan persetujuan pengurus.</flux:text>
+        </div>
+        <flux:separator variant="subtle" />
+        <form wire:submit="submitSetoranTambahan" class="flex flex-col gap-4">
+            <flux:field>
+                <flux:label>Program LAZIS</flux:label>
+                <flux:select wire:model="jenisLazisTambahan">
+                    <flux:select.option value="zakat">Zakat</flux:select.option>
+                    <flux:select.option value="infaq_shodaqoh">Infaq & Shodaqoh</flux:select.option>
+                </flux:select>
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Nominal (Rp)</flux:label>
+                <flux:input wire:model="nominalTambahan" type="number" placeholder="Minimal Rp 1.000" />
+                @error('nominalTambahan') <flux:error>{{ $message }}</flux:error> @enderror
+            </flux:field>
+
+            <flux:field>
+                <flux:label>Metode Pembayaran</flux:label>
+                <div class="grid grid-cols-2 gap-3 mt-1">
+                    <label class="flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
+                                  {{ $metodeTambahan === 'payroll' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300' }}">
+                        <input type="radio" wire:model="metodeTambahan" value="payroll" class="sr-only">
+                        <flux:icon name="banknotes" class="w-6 h-6 {{ $metodeTambahan === 'payroll' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400' }}" />
+                        <span class="text-sm font-medium {{ $metodeTambahan === 'payroll' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-600 dark:text-zinc-400' }}">Via Payroll</span>
+                        <span class="text-[10px] text-center {{ $metodeTambahan === 'payroll' ? 'text-blue-500/80' : 'text-zinc-400' }}">Dipotong bulan depan</span>
+                    </label>
+                    <label class="flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
+                                  {{ $metodeTambahan === 'qris' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300' }}">
+                        <input type="radio" wire:model="metodeTambahan" value="qris" class="sr-only">
+                        <flux:icon name="qr-code" class="w-6 h-6 {{ $metodeTambahan === 'qris' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400' }}" />
+                        <span class="text-sm font-medium {{ $metodeTambahan === 'qris' ? 'text-emerald-700 dark:text-emerald-300' : 'text-zinc-600 dark:text-zinc-400' }}">Via QRIS</span>
+                        <span class="text-[10px] text-center {{ $metodeTambahan === 'qris' ? 'text-emerald-500/80' : 'text-zinc-400' }}">Langsung diproses</span>
+                    </label>
+                </div>
+                @error('metodeTambahan') <flux:error>{{ $message }}</flux:error> @enderror
+            </flux:field>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <flux:modal.close><flux:button variant="ghost">Batal</flux:button></flux:modal.close>
+                <flux:button type="submit" variant="primary" icon="heart">Bayar Sekarang</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- Modal Sukses Setoran Tambahan --}}
+    <flux:modal name="sukses-setoran-tambahan" class="md:w-[22rem]">
+        <div class="flex flex-col items-center justify-center gap-4 text-center py-4">
+            <div class="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-500">
+                <flux:icon name="heart" class="w-9 h-9" />
+            </div>
+            <flux:heading size="lg">Setoran Berhasil!</flux:heading>
+            <flux:text size="sm" class="text-zinc-500">
+                Setoran tambahan LAZIS Anda berhasil diproses. Semoga menjadi amal yang berkah.
+            </flux:text>
+            <flux:modal.close><flux:button variant="primary" class="w-full mt-1">Tutup</flux:button></flux:modal.close>
+        </div>
+    </flux:modal>
+
+</div>

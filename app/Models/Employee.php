@@ -65,4 +65,14 @@ class Employee extends Model
     {
         return $this->hasMany(TagihanPayrollEmployee::class);
     }
+
+    public function pengaturanPpobEmployee(): HasOne
+    {
+        return $this->hasOne(PengaturanPpobEmployee::class);
+    }
+
+    public function mutasiSaldoMember(): HasMany
+    {
+        return $this->hasMany(MutasiSaldoMember::class);
+    }
 }

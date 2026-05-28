@@ -34,23 +34,10 @@
           <flux:brand href="#" logo="{{ asset('img/kki-icon-2-light.png') }}" class="max-lg:hidden dark:hidden" />
           <flux:brand href="#" logo="{{ asset('img/kki-icon-2-dark.png') }}" class="max-lg:hidden! hidden dark:flex" />
           <flux:navbar class="-mb-px max-lg:hidden">
-              <flux:navbar.item icon="home" href="{{ url('anggota') }}" wire:navigate :current="request()->is('anggota')">Home</flux:navbar.item>
-              <flux:dropdown class="max-lg:hidden">
-                  <flux:navbar.item icon="wallet" icon:trailing="chevron-down" :current="request()->is('anggota/simpanan-sukarela') || request()->is('anggota/tarik-saldo')">Dompet</flux:navbar.item>
-                  <flux:navmenu>
-                      <flux:navmenu.item href="{{ url('anggota/simpanan-sukarela') }}" wire:navigate>Simpanan Sukarela</flux:navmenu.item>
-                      <flux:navmenu.item href="{{ url('anggota/tarik-saldo') }}" wire:navigate>Tarik Saldo</flux:navmenu.item>
-                  </flux:navmenu>
-              </flux:dropdown>
+              <flux:navbar.item icon="home" href="{{ url('anggota') }}" wire:navigate :current="request()->is('anggota')">Beranda</flux:navbar.item>
+              <flux:navbar.item icon="wallet" href="{{ url('anggota/dompet') }}" wire:navigate :current="request()->is('anggota/dompet')">Dompet</flux:navbar.item>
               <flux:navbar.item icon="banknotes" href="{{ url('anggota/pembiayaan-pinjaman') }}" wire:navigate :current="request()->is('anggota/pembiayaan-pinjaman') || request()->is('anggota/pembiayaan-pinjaman/*')">Pinjaman</flux:navbar.item>
-              <flux:separator vertical variant="subtle" class="my-2"/>
-              <flux:dropdown class="max-lg:hidden">
-                  <flux:navbar.item icon="document-text" icon:trailing="chevron-down">Pembayaran</flux:navbar.item>
-                  <flux:navmenu>
-                      <flux:navmenu.item href="{{ url('anggota/ppob') }}" wire:navigate>PPOB</flux:navmenu.item>
-                      <flux:navmenu.item href="{{ url('anggota/lazis') }}" wire:navigate>Lazis</flux:navmenu.item>
-                  </flux:navmenu>
-              </flux:dropdown>
+              <flux:navbar.item icon="qr-code" href="{{ url('anggota/pembayaran') }}" wire:navigate :current="request()->is('anggota/pembayaran') || request()->is('anggota/pembayaran/*')">Pembayaran</flux:navbar.item>
           </flux:navbar>
           <flux:spacer />
           <flux:navbar class="me-4">
@@ -79,11 +66,8 @@
               <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
           </flux:sidebar.header>
           <flux:sidebar.nav>
-              <flux:sidebar.item icon="home" href="{{ url('anggota') }}" wire:navigate :current="request()->is('anggota')">Home</flux:sidebar.item>
-              <flux:sidebar.group expandable heading="Dompet" class="grid">
-                  <flux:sidebar.item href="{{ url('anggota/simpanan-sukarela') }}" wire:navigate :current="request()->is('anggota/simpanan-sukarela')">Simpanan Sukarela</flux:sidebar.item>
-                  <flux:sidebar.item href="{{ url('anggota/tarik-saldo') }}" wire:navigate :current="request()->is('anggota/tarik-saldo')">Tarik Saldo</flux:sidebar.item>
-              </flux:sidebar.group>
+              <flux:sidebar.item icon="home" href="{{ url('anggota') }}" wire:navigate :current="request()->is('anggota')">Beranda</flux:sidebar.item>
+              <flux:sidebar.item icon="wallet" href="{{ url('anggota/dompet') }}" wire:navigate :current="request()->is('anggota/dompet')">Dompet</flux:sidebar.item>
               <flux:sidebar.item icon="banknotes" href="{{ url('anggota/pembiayaan-pinjaman') }}" wire:navigate :current="request()->is('anggota/pembiayaan-pinjaman') || request()->is('anggota/pembiayaan-pinjaman/*')">Pinjaman</flux:sidebar.item>
               <flux:sidebar.group expandable heading="Pembayaran" class="grid">
                   <flux:sidebar.item href="{{ url('anggota/ppob') }}" wire:navigate>PPOB</flux:sidebar.item>
@@ -116,27 +100,25 @@
       <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 z-50 px-6 py-3 flex justify-between items-center pb-safe">
           <a href="{{ url('anggota') }}" wire:navigate class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
               <flux:icon name="home" variant="{{ request()->is('anggota') ? 'solid' : 'outline' }}" class="w-6 h-6" />
-              <span class="text-[10px] font-medium">Home</span>
+              <span class="text-[10px] font-medium">Beranda</span>
           </a>
           
-          <flux:dropdown position="top" align="center">
-              <button class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/simpanan-sukarela') || request()->is('anggota/tarik-saldo') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
-                  <flux:icon name="wallet" variant="{{ request()->is('anggota/simpanan-sukarela') || request()->is('anggota/tarik-saldo') ? 'solid' : 'outline' }}" class="w-6 h-6" />
-                  <span class="text-[10px] font-medium">Dompet</span>
-              </button>
-              
-              <flux:menu>
-                  <flux:menu.item href="{{ url('anggota/simpanan-sukarela') }}" wire:navigate>Simpanan Sukarela</flux:menu.item>
-                  <flux:menu.item href="{{ url('anggota/tarik-saldo') }}" wire:navigate>Tarik Saldo</flux:menu.item>
-              </flux:menu>
-          </flux:dropdown>
+          <a href="{{ url('anggota/dompet') }}" wire:navigate class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/dompet') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+              <flux:icon name="wallet" variant="{{ request()->is('anggota/dompet') ? 'solid' : 'outline' }}" class="w-6 h-6" />
+              <span class="text-[10px] font-medium">Dompet</span>
+          </a>
 
           <a href="{{ url('anggota/pembiayaan-pinjaman') }}" wire:navigate class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/pembiayaan-pinjaman') || request()->is('anggota/pembiayaan-pinjaman/*') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
               <flux:icon name="banknotes" variant="{{ request()->is('anggota/pembiayaan-pinjaman') || request()->is('anggota/pembiayaan-pinjaman/*') ? 'solid' : 'outline' }}" class="w-6 h-6" />
               <span class="text-[10px] font-medium">Pinjaman</span>
           </a>
 
-          <flux:dropdown position="top" align="center">
+          <a href="{{ url('anggota/pembayaran') }}" wire:navigate class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/pembayaran') || request()->is('anggota/pembayaran/*') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
+              <flux:icon name="banknotes" variant="{{ request()->is('anggota/pembayaran') || request()->is('anggota/pembayaran/*') ? 'solid' : 'outline' }}" class="w-6 h-6" />
+              <span class="text-[10px] font-medium">Bayar</span>
+          </a>
+
+          <!-- <flux:dropdown position="top" align="center">
               <button class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/ppob') || request()->is('anggota/lazis') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
                   <flux:icon name="qr-code" variant="{{ request()->is('anggota/ppob') || request()->is('anggota/lazis') ? 'solid' : 'outline' }}" class="w-6 h-6" />
                   <span class="text-[10px] font-medium">Bayar</span>
@@ -146,7 +128,7 @@
                   <flux:menu.item href="{{ url('anggota/ppob') }}" wire:navigate>PPOB</flux:menu.item>
                   <flux:menu.item href="{{ url('anggota/lazis') }}" wire:navigate>Lazis</flux:menu.item>
               </flux:menu>
-          </flux:dropdown>
+          </flux:dropdown> -->
 
           <a href="{{ url('anggota/profile') }}" wire:navigate class="flex flex-col items-center gap-1 transition-colors {{ request()->is('anggota/profile') ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
               <flux:icon name="user" variant="{{ request()->is('anggota/profile') ? 'solid' : 'outline' }}" class="w-6 h-6" />

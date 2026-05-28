@@ -22,7 +22,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
     public function pengajuan()
     {
         $data = Pinjaman::with(['employee', 'employee.user'])
-                ->whereIn('status', ['diajukan', 'disetujui_bendahara'])
+                ->whereIn('status', ['diajukan', 'disetujui_bendahara', 'disetujui_ketua', 'dicairkan'])
                 ->orderBy('updated_at', 'DESC')
                 ->get();
 
@@ -126,6 +126,56 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
         Flux::toast(
             heading: 'Disetujui Ketua',
             text: 'Pengajuan pinjaman telah disetujui sepenuhnya oleh Ketua.',
+            variant: 'success',
+        );
+
+        Flux::modal('detail-pengajuan')->close();
+        $this->selectedPinjaman = null;
+    }
+
+    public function approveStaffKoperasi($id)
+    {
+        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
+            $this->selectedPinjaman = Pinjaman::find($id);
+        }
+
+        if (!$this->selectedPinjaman) {
+            Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
+            return;
+        }
+
+        $this->selectedPinjaman->update([
+            'status' => 'dicairkan',
+        ]);
+
+        Flux::toast(
+            heading: 'Diproses Staff',
+            text: 'Dana pinjaman telah dicairkan oleh staff koperasi.',
+            variant: 'success',
+        );
+
+        Flux::modal('detail-pengajuan')->close();
+        $this->selectedPinjaman = null;
+    }
+
+    public function aktivasiCicilan($id)
+    {
+        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
+            $this->selectedPinjaman = Pinjaman::find($id);
+        }
+
+        if (!$this->selectedPinjaman) {
+            Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
+            return;
+        }
+
+        $this->selectedPinjaman->update([
+            'status' => 'berjalan',
+        ]);
+
+        Flux::toast(
+            heading: 'Diaktivasi Staff',
+            text: 'Pinjaman telah diaktifkan oleh staff koperasi.',
             variant: 'success',
         );
 
@@ -247,6 +297,10 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
                                     <flux:badge color="orange" size="sm" icon="clock">Menunggu Bendahara</flux:badge>
                                 @elseif($row->status === 'disetujui_bendahara')
                                     <flux:badge color="sky" size="sm" icon="clock">Menunggu Ketua</flux:badge>
+                                @elseif($row->status === 'disetujui_ketua')
+                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Pencairan Dana</flux:badge>
+                                @elseif($row->status === 'dicairkan')
+                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Aktivasi Cicilan</flux:badge>
                                 @else
                                     <flux:badge color="zinc" size="sm">{{ $row->status }}</flux:badge>
                                 @endif
@@ -272,7 +326,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
         @if($selectedSelected = $selectedPinjaman)
             <div>
                 <flux:heading size="lg">Detail Pengajuan Pinjaman</flux:heading>
-                <flux:text size="sm" class="mt-1">Tinjau informasi pengajuan pinjaman dana darurat anggota.</flux:text>
+                <flux:text size="sm" class="mt-1">Tinjau informasi pengajuan pinjaman anggota.</flux:text>
             </div>
 
             <div class="mt-6 flex flex-col gap-6">
@@ -362,7 +416,11 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
                         @if($selectedSelected->status === 'diajukan')
                             <flux:button variant="primary" icon="check" wire:click="approveBendahara({{ $selectedSelected->id }})">Setujui (Bendahara)</flux:button>
                         @elseif($selectedSelected->status === 'disetujui_bendahara')
-                            <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="approveKetua({{ $selectedSelected->id }})">Setujui Akhir (Ketua)</flux:button>
+                            <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="approveKetua({{ $selectedSelected->id }})">Setujui (Ketua)</flux:button>
+                        @elseif($selectedSelected->status === 'disetujui_ketua')
+                            <flux:button variant="primary" color="orange" icon="check-circle" wire:click="approveStaffKoperasi({{ $selectedSelected->id }})">Proses Pencairan Dana</flux:button>
+                        @elseif($selectedSelected->status === 'dicairkan')
+                            <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="aktivasiCicilan({{ $selectedSelected->id }})">Aktifkan Cicilan</flux:button>
                         @endif
                     </div>
                 </div>

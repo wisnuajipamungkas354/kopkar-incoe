@@ -3,7 +3,7 @@
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use App\Models\KoperasiMember;
-use App\Models\TransaksiMutasi;
+use App\Models\MutasiSaldoMember;
 use App\Models\PengajuanUtama;
 
 new #[Layout('layouts::admin')] class extends Component
@@ -25,40 +25,32 @@ new #[Layout('layouts::admin')] class extends Component
     
     private function calculateSimpanan()
     {
-        $userId = $this->member->employee->user?->id;
+        $employeeId = $this->member->employee_id;
 
-        if (!$userId) {
+        if (!$employeeId) {
             return;
         }
 
-        // Ambil transaksi sukses
-        $mutasi = TransaksiMutasi::where('user_id', $userId)
-            ->where('status_pembayaran', 'success')
-            ->get();
-            
         // Hitung Saldo Pokok
-        $this->simpananPokok = $mutasi->where('kategori_transaksi', 'pokok')
-            ->whereIn('jenis_transaksi', ['setoran_awal', 'setoran_tambahan', 'payroll_rutin', 'angsuran_bulanan'])
-            ->sum('nominal') - 
-            $mutasi->where('kategori_transaksi', 'pokok')
-            ->where('jenis_transaksi', 'pencairan_dana')
-            ->sum('nominal');
+        $latestPokok = MutasiSaldoMember::where('employee_id', $employeeId)
+            ->where('jenis_saldo', 'simpanan_pokok')
+            ->latest('id')
+            ->first();
+        $this->simpananPokok = $latestPokok ? $latestPokok->saldo_sesudah : 0;
 
         // Hitung Saldo Wajib
-        $this->simpananWajib = $mutasi->where('kategori_transaksi', 'wajib')
-            ->whereIn('jenis_transaksi', ['setoran_awal', 'setoran_tambahan', 'payroll_rutin', 'angsuran_bulanan'])
-            ->sum('nominal') - 
-            $mutasi->where('kategori_transaksi', 'wajib')
-            ->where('jenis_transaksi', 'pencairan_dana')
-            ->sum('nominal');
+        $latestWajib = MutasiSaldoMember::where('employee_id', $employeeId)
+            ->where('jenis_saldo', 'simpanan_wajib')
+            ->latest('id')
+            ->first();
+        $this->simpananWajib = $latestWajib ? $latestWajib->saldo_sesudah : 0;
                                        
         // Hitung Saldo Sukarela
-        $this->simpananSukarela = $mutasi->where('kategori_transaksi', 'sukarela')
-            ->whereIn('jenis_transaksi', ['setoran_awal', 'setoran_tambahan', 'payroll_rutin', 'angsuran_bulanan'])
-            ->sum('nominal') - 
-            $mutasi->where('kategori_transaksi', 'sukarela')
-            ->where('jenis_transaksi', 'pencairan_dana')
-            ->sum('nominal');
+        $latestSukarela = MutasiSaldoMember::where('employee_id', $employeeId)
+            ->where('jenis_saldo', 'simpanan_sukarela')
+            ->latest('id')
+            ->first();
+        $this->simpananSukarela = $latestSukarela ? $latestSukarela->saldo_sesudah : 0;
 
         $this->totalSimpanan = $this->simpananPokok + $this->simpananWajib + $this->simpananSukarela;
     }

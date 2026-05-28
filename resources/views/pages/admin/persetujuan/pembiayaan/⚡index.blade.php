@@ -172,7 +172,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pembiayaan'])] class ext
 
         Flux::toast(
             heading: 'Disetujui Bendahara',
-            text: 'Pengajuan pembiayaan telah disetujui oleh Bendahara',
+            text: 'Pengajuan pembiayaan telah berhasil disetujui oleh Bendahara',
             variant: 'success',
         );
 
@@ -198,7 +198,8 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pembiayaan'])] class ext
         TagihanPayrollEmployee::create([
             'employee_id' => $this->selectedPembiayaan->employee_id,
             'jenis_tagihan' => 'pembiayaan',
-            'referensi_id' => $this->selectedPembiayaan->id,
+            'tagihanable_type' => Pembiayaan::class,
+            'tagihanable_id' => $this->selectedPembiayaan->id,
             'periode_bulan' => now()->format('m'),
             'periode_tahun' => now()->format('Y'),
             'periode_payroll_bulan' => now()->addMonth()->format('m'),
@@ -332,13 +333,13 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pembiayaan'])] class ext
                             <flux:table.cell>{{ $row->tenor_bulan }} Bulan</flux:table.cell>
                             <flux:table.cell>
                                 @if($row->status === 'diajukan')
-                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Ketua</flux:badge>
-                                @elseif($row->status === 'disetujui_ketua')
-                                    <flux:badge color="sky" size="sm" icon="clock">Menunggu Diproses Staf</flux:badge>
-                                @elseif($row->status === 'dicairkan')
-                                    <flux:badge color="sky" size="sm" icon="clock">Menunggu Bendahara</flux:badge>
+                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Bendahara</flux:badge>
                                 @elseif($row->status === 'disetujui_bendahara')
-                                    <flux:badge color="emerald" size="sm" icon="check-circle">Disetujui (Bendahara)</flux:badge>
+                                    <flux:badge color="sky" size="sm" icon="clock">Menunggu Ketua</flux:badge>
+                                @elseif($row->status === 'disetujui_ketua')
+                                    <flux:badge color="sky" size="sm" icon="clock">Menunggu Pencairan Dana</flux:badge>
+                                @elseif($row->status === 'dicairkan')
+                                    <flux:badge color="emerald" size="sm" icon="check-circle">Menunggu Aktivasi</flux:badge>
                                 @else
                                     <flux:badge color="zinc" size="sm">{{ $row->status }}</flux:badge>
                                 @endif
@@ -505,17 +506,17 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pembiayaan'])] class ext
                     </flux:field>
 
                     <div class="flex justify-end gap-3 pt-2">
-                        @if(in_array($selectedSelected->status, ['disetujui_ketua', 'dicairkan', 'diajukan']))
+                        @if(in_array($selectedSelected->status, ['disetujui_ketua', 'dicairkan', 'diajukan', 'disetujui_bendahara']))
                             <flux:button variant="danger" icon="x-mark" wire:click="tolak({{ $selectedSelected->id }})">Tolak Pengajuan</flux:button>
                         @endif
                         
                         @if($selectedSelected->status === 'diajukan')
-                            <flux:button variant="primary" color="blue" icon="check" wire:click="approveKetua({{ $selectedSelected->id }})">Setujui (Ketua)</flux:button>
-                        @elseif($selectedSelected->status === 'disetujui_ketua')
-                            <flux:button variant="primary" color="amber" icon="check-circle" wire:click="approveStaff({{ $selectedSelected->id }})">Proses Pencairan Dana(Staf)</flux:button>
-                        @elseif($selectedSelected->status === 'dicairkan')
                             <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="approveBendahara({{ $selectedSelected->id }})">Setujui (Bendahara)</flux:button>
                         @elseif($selectedSelected->status === 'disetujui_bendahara')
+                            <flux:button variant="primary" color="blue" icon="check" wire:click="approveKetua({{ $selectedSelected->id }})">Setujui (Ketua)</flux:button>
+                        @elseif($selectedSelected->status === 'disetujui_ketua')
+                            <flux:button variant="primary" color="amber" icon="check-circle" wire:click="approveStaff({{ $selectedSelected->id }})">Proses Pencairan Dana (Staf)</flux:button>
+                        @elseif($selectedSelected->status === 'dicairkan')
                             <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="aktifkanAngsuran({{ $selectedSelected->id }})">Aktifkan Angsuran</flux:button>
                         @endif
                     </div>

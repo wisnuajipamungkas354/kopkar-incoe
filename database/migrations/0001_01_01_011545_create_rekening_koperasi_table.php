@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('rekening_koperasi', function (Blueprint $table) {
             $table->id();
             $table->string('nama_rekening');
-            $table->string('kode_rekening')->unique();
+            $table->string('kode_rekening');
             $table->string('nama_bank');
-            $table->string('no_rekening');
-            $table->string('atas_nama');
+            $table->string('no_rekening')->nullable();
+            $table->string('atas_nama')->nullable();
             $table->decimal('saldo_saat_ini', 15, 2)->default(0);
+            $table->boolean('is_cash')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

@@ -2,8 +2,6 @@
 
 use Livewire\Component;
 use Livewire\Attributes\On;
-use App\Models\TransaksiMutasi;
-use App\Models\TransaksiMutasiQris;
 use Carbon\Carbon;
 
 new class extends Component
@@ -14,20 +12,14 @@ new class extends Component
 
     public function mount()
     {
-        $activeTransaksi = TransaksiMutasi::where('user_id', auth('web')->user()->id)
-            ->where('metode_pembayaran', 'qris')
-            ->where('status_pembayaran', 'pending')
-            ->where('tanggal_transaksi', '>=', now()->subMinutes(15))
-            ->latest('tanggal_transaksi')
-            ->first();
-
-        if ($activeTransaksi) {
-            $qris = TransaksiMutasiQris::where('transaksi_mutasi_id', $activeTransaksi->id)->first();
-            if ($qris) {
-                $this->qrImage = $qris->url_image_qris;
-                $this->expiresAt = Carbon::parse($activeTransaksi->tanggal_transaksi)->addMinutes(15)->toIso8601String();
-                $this->isGenerated = true;
-            }
+        $sessionKey = 'active_qris_' . auth('web')->user()->id;
+        $active = session($sessionKey);
+        if ($active && Carbon::parse($active['expiresAt'])->isFuture()) {
+            $this->qrImage = $active['qrImage'];
+            $this->expiresAt = $active['expiresAt'];
+            $this->isGenerated = true;
+        } else {
+            session()->forget($sessionKey);
         }
     }
 
@@ -41,16 +33,8 @@ new class extends Component
 
     public function cancelQris()
     {
-        $activeTransaksi = TransaksiMutasi::where('user_id', auth('web')->user()->id)
-            ->where('metode_pembayaran', 'qris')
-            ->where('status_pembayaran', 'pending')
-            ->where('tanggal_transaksi', '>=', now()->subMinutes(15))
-            ->latest('tanggal_transaksi')
-            ->first();
-
-        if ($activeTransaksi) {
-            $activeTransaksi->update(['status_pembayaran' => 'failed']);
-        }
+        $sessionKey = 'active_qris_' . auth('web')->user()->id;
+        session()->forget($sessionKey);
 
         $this->isGenerated = false;
         $this->dispatch('qris-cancelled');
@@ -60,9 +44,12 @@ new class extends Component
     {
         if (!$this->qrImage) return;
 
-        $content = file_get_contents($this->qrImage);
-
-        return response()->streamDownload(function () use ($content) { echo $content; }, 'QRIS-Payment.png', [ 'Content-Type' => 'image/png']);
+        try {
+            $content = file_get_contents($this->qrImage);
+            return response()->streamDownload(function () use ($content) { echo $content; }, 'QRIS-Payment.png', [ 'Content-Type' => 'image/png']);
+        } catch (\Throwable $e) {
+            return redirect($this->qrImage);
+        }
     }
 };
 ?>
