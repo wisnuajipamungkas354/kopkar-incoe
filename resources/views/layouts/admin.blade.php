@@ -27,7 +27,6 @@
 
         @livewireStyles
         @fluxAppearance
-        @pwaHead
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800 antialiased">
         <flux:sidebar sticky collapsible class="bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
@@ -110,8 +109,5 @@
         <flux:toast />
         @livewireScripts
         @fluxScripts
-        @laravelPwa
-        @pwaUpdateNotifier
-        @pwaInstallButton
     </body>
 </html>
