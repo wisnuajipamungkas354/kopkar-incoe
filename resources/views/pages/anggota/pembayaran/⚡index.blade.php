@@ -313,6 +313,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
          TAB: PPOB
     ══════════════════════════════════════════════════════════════ --}}
     @if($mainTab === 'ppob')
+        <div class="animate-fade-in-up space-y-6">
 
         {{-- Kartu Ringkasan PPOB --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -527,6 +528,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                 </div>
             </div>
         @endif
+        </div>
 
     @endif
 
@@ -535,6 +537,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
          TAB: LAZIS
     ══════════════════════════════════════════════════════════════ --}}
     @if($mainTab === 'lazis')
+        <div class="animate-fade-in-up space-y-6">
 
         {{-- Info Kemitraan YAA --}}
         <div class="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20">
@@ -669,6 +672,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
 
             {{-- Tab: Setoran Aktif --}}
             @if($lazisTab === 'setoran')
+                <div class="animate-fade-in-up">
                 {{-- Mobile --}}
                 <div class="sm:hidden space-y-2">
                     @forelse($this->setoranAktif as $row)
@@ -752,9 +756,11 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
+                </div>
 
             {{-- Tab: Dalam Pengajuan --}}
             @elseif($lazisTab === 'pengajuan')
+                <div class="animate-fade-in-up">
                 {{-- Mobile --}}
                 <div class="sm:hidden space-y-2">
                     @forelse($this->daftarPengajuan as $row)
@@ -826,9 +832,11 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                     </flux:table.rows>
                 </flux:table>
                 <div class="mt-4">{{ $this->daftarPengajuan->links() }}</div>
+                </div>
 
             {{-- Tab: Riwayat --}}
             @else
+                <div class="animate-fade-in-up">
                 {{-- Mobile --}}
                 <div class="sm:hidden space-y-2">
                     @forelse($this->riwayatLazis as $row)
@@ -897,6 +905,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                     </flux:table.rows>
                 </flux:table>
                 <div class="mt-4">{{ $this->riwayatLazis->links() }}</div>
+                </div>
             @endif
 
         </flux:card>
@@ -912,6 +921,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                     <li>Setoran tambahan via payroll dipotong di bulan berikutnya; via QRIS diproses segera.</li>
                 </ul>
             </div>
+        </div>
         </div>
 
     @endif

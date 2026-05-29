@@ -170,7 +170,8 @@ new #[Layout('layouts::anggota')] class extends Component
          TAB: INFORMASI PRIBADI
     ═══════════════════════════════════ --}}
     @if($activeTab === 'info')
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="animate-fade-in-up">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {{-- Kolom Kiri: Ringkasan --}}
             <div class="lg:col-span-1">
@@ -333,13 +334,15 @@ new #[Layout('layouts::anggota')] class extends Component
 
             </div>
         </div>
+        </div>
     @endif
 
     {{-- ═══════════════════════════════════
          TAB: UBAH PROFIL
     ═══════════════════════════════════ --}}
     @if($activeTab === 'edit')
-        <flux:card>
+        <div class="animate-fade-in-up">
+            <flux:card>
             <form wire:submit="save" class="space-y-6">
                 {{-- Informasi Akun --}}
                 <div class="space-y-4">
@@ -466,5 +469,6 @@ new #[Layout('layouts::anggota')] class extends Component
                 </div>
             </form>
         </flux:card>
+        </div>
     @endif
 </div>

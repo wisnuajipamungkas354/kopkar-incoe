@@ -230,7 +230,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
 
         {{-- ── TAB: PINJAMAN AKTIF ─────────────────── --}}
         @if($activeTab === 'aktif')
-            {{-- Mobile card list --}}
+            <div class="animate-fade-in-up">
+                {{-- Mobile card list --}}
             <div class="sm:hidden space-y-2">
                 @forelse($this->daftarAktif as $row)
                     @php
@@ -338,9 +339,11 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                     </flux:table.rows>
                 </flux:table>
             </div>
+            </div>
 
         {{-- ── TAB: RIWAYAT PENGAJUAN ──────────────── --}}
         @elseif($activeTab === 'pengajuan')
+            <div class="animate-fade-in-up">
             {{-- Mobile card list --}}
             <div class="sm:hidden space-y-2">
                 @forelse($this->daftarPengajuan as $row)
@@ -448,6 +451,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
+            </div>
             </div>
         @endif
     </flux:card>

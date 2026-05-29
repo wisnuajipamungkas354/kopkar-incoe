@@ -290,7 +290,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
     <div class="grid grid-cols-3 gap-3">
         {{-- Ubah Setoran --}}
         <flux:modal.trigger name="ubah-setoran">
-            <button class="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-emerald-400 hover:shadow-md transition-all w-full">
+            <button class="group flex flex-col items-center gap-2 p-3 cursor-pointer sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-emerald-400 hover:shadow-md transition-all w-full">
                 <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                     <flux:icon name="pencil-square" class="w-5 h-5" />
                 </div>
@@ -300,7 +300,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 
         {{-- Tarik Saldo --}}
         <button wire:click="openTarikSaldo"
-            class="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-red-400 hover:shadow-md transition-all w-full">
+            class="group flex flex-col items-center gap-2 p-3 cursor-pointer sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-red-400 hover:shadow-md transition-all w-full">
             <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-500 dark:text-red-400 group-hover:scale-110 transition-transform">
                 <flux:icon name="arrow-up-tray" class="w-5 h-5" />
             </div>
@@ -309,7 +309,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 
         {{-- Setor Tambahan --}}
         <flux:modal.trigger name="setor-tambahan">
-            <button class="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all w-full">
+            <button class="group flex flex-col items-center gap-2 p-3 cursor-pointer sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all w-full">
                 <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
                     <flux:icon name="plus-circle" class="w-5 h-5" />
                 </div>
@@ -331,7 +331,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
         @endphp
         @foreach($tabs as $key => $label)
             <button wire:click="switchTab('{{ $key }}')"
-                    class="shrink-0 pb-3 px-1 text-sm font-semibold border-b-2 transition-all
+                    class="shrink-0 pb-3 px-1 text-sm font-semibold border-b-2 cursor-pointer transition-all
                            {{ $activeTab === $key
                               ? 'border-emerald-500 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
                               : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
@@ -356,223 +356,229 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 
         {{-- ── TAB: RIWAYAT MUTASI ─────────────── --}}
         @if($activeTab === 'mutasi')
-            {{-- Mobile --}}
-            <div class="sm:hidden space-y-2">
-                @forelse($this->mutasiSukarela as $row)
-                    <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
-                        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0
-                            {{ $row->jenis_mutasi === 'kredit' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' }}">
-                            <flux:icon name="{{ $row->jenis_mutasi === 'kredit' ? 'arrow-down' : 'arrow-up' }}" class="w-4 h-4" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start gap-2">
-                                <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                                    {{ $row->keterangan ?: ucfirst(str_replace('_', ' ', $row->sumber_transaksi)) }}
-                                </span>
-                                <span class="text-sm font-bold shrink-0 {{ $row->jenis_mutasi === 'kredit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400' }}">
-                                    {{ $row->jenis_mutasi === 'kredit' ? '+' : '-' }} Rp {{ number_format($row->nominal, 0, ',', '.') }}
-                                </span>
+            <div class="animate-fade-in-up">
+                {{-- Mobile --}}
+                <div class="sm:hidden space-y-2">
+                    @forelse($this->mutasiSukarela as $row)
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0
+                                {{ $row->jenis_mutasi === 'kredit' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' }}">
+                                <flux:icon name="{{ $row->jenis_mutasi === 'kredit' ? 'arrow-down' : 'arrow-up' }}" class="w-4 h-4" />
                             </div>
-                            <div class="flex items-center gap-2 mt-0.5">
-                                <span class="text-xs text-zinc-400">{{ $row->created_at->format('d/m/Y') }}</span>
-                                <span class="text-zinc-300 dark:text-zinc-600 text-xs">·</span>
-                                @if($row->sumber_transaksi === 'payroll') <flux:badge color="blue" size="sm">Payroll</flux:badge>
-                                @elseif($row->sumber_transaksi === 'penarikan_saldo') <flux:badge color="red" size="sm">Penarikan</flux:badge>
-                                @elseif($row->sumber_transaksi === 'pembagian_shu') <flux:badge color="purple" size="sm">SHU</flux:badge>
-                                @else <flux:badge color="zinc" size="sm">{{ ucfirst(str_replace('_',' ',$row->sumber_transaksi)) }}</flux:badge>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="text-center text-zinc-400 py-10">
-                        <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30" />
-                        <p class="text-sm">Belum ada mutasi simpanan sukarela.</p>
-                    </div>
-                @endforelse
-            </div>
-            {{-- Desktop --}}
-            <div class="hidden sm:block overflow-x-auto">
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>Tanggal</flux:table.column>
-                        <flux:table.column>Keterangan</flux:table.column>
-                        <flux:table.column>Sumber</flux:table.column>
-                        <flux:table.column>Saldo Sesudah</flux:table.column>
-                        <flux:table.column>Nominal</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @forelse($this->mutasiSukarela as $row)
-                            <flux:table.row :key="$row->id">
-                                <flux:table.cell class="text-zinc-400 text-sm">{{ $row->created_at->format('d/m/Y') }}</flux:table.cell>
-                                <flux:table.cell class="font-medium text-zinc-700 dark:text-zinc-300">{{ $row->keterangan ?: '-' }}</flux:table.cell>
-                                <flux:table.cell>
-                                    @if($row->sumber_transaksi === 'payroll') <flux:badge color="blue" size="sm" inset="top bottom">Payroll</flux:badge>
-                                    @elseif($row->sumber_transaksi === 'penarikan_saldo') <flux:badge color="red" size="sm" inset="top bottom">Penarikan</flux:badge>
-                                    @elseif($row->sumber_transaksi === 'pembagian_shu') <flux:badge color="purple" size="sm" inset="top bottom">SHU</flux:badge>
-                                    @else <flux:badge color="zinc" size="sm" inset="top bottom">{{ ucfirst(str_replace('_',' ',$row->sumber_transaksi)) }}</flux:badge>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-start gap-2">
+                                    <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                                        {{ $row->keterangan ?: ucfirst(str_replace('_', ' ', $row->sumber_transaksi)) }}
+                                    </span>
+                                    <span class="text-sm font-bold shrink-0 {{ $row->jenis_mutasi === 'kredit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400' }}">
+                                        {{ $row->jenis_mutasi === 'kredit' ? '+' : '-' }} Rp {{ number_format($row->nominal, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-xs text-zinc-400">{{ $row->created_at->format('d/m/Y') }}</span>
+                                    <span class="text-zinc-300 dark:text-zinc-600 text-xs">·</span>
+                                    @if($row->sumber_transaksi === 'payroll') <flux:badge color="blue" size="sm">Payroll</flux:badge>
+                                    @elseif($row->sumber_transaksi === 'penarikan_saldo') <flux:badge color="red" size="sm">Penarikan</flux:badge>
+                                    @elseif($row->sumber_transaksi === 'pembagian_shu') <flux:badge color="purple" size="sm">SHU</flux:badge>
+                                    @else <flux:badge color="zinc" size="sm">{{ ucfirst(str_replace('_',' ',$row->sumber_transaksi)) }}</flux:badge>
                                     @endif
-                                </flux:table.cell>
-                                <flux:table.cell class="text-zinc-400 text-sm">Rp {{ number_format($row->saldo_sesudah, 0, ',', '.') }}</flux:table.cell>
-                                <flux:table.cell class="font-semibold {{ $row->jenis_mutasi === 'kredit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400' }}">
-                                    {{ $row->jenis_mutasi === 'kredit' ? '+' : '-' }} Rp {{ number_format($row->nominal, 0, ',', '.') }}
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @empty
-                            <flux:table.row>
-                                <flux:table.cell colspan="5" class="text-center text-zinc-400 py-8">Belum ada mutasi.</flux:table.cell>
-                            </flux:table.row>
-                        @endforelse
-                    </flux:table.rows>
-                </flux:table>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center text-zinc-400 py-10">
+                            <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30" />
+                            <p class="text-sm">Belum ada mutasi simpanan sukarela.</p>
+                        </div>
+                    @endforelse
+                </div>
+                {{-- Desktop --}}
+                <div class="hidden sm:block overflow-x-auto">
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>Tanggal</flux:table.column>
+                            <flux:table.column>Keterangan</flux:table.column>
+                            <flux:table.column>Sumber</flux:table.column>
+                            <flux:table.column>Saldo Sesudah</flux:table.column>
+                            <flux:table.column>Nominal</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @forelse($this->mutasiSukarela as $row)
+                                <flux:table.row :key="$row->id">
+                                    <flux:table.cell class="text-zinc-400 text-sm">{{ $row->created_at->format('d/m/Y') }}</flux:table.cell>
+                                    <flux:table.cell class="font-medium text-zinc-700 dark:text-zinc-300">{{ $row->keterangan ?: '-' }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        @if($row->sumber_transaksi === 'payroll') <flux:badge color="blue" size="sm" inset="top bottom">Payroll</flux:badge>
+                                        @elseif($row->sumber_transaksi === 'penarikan_saldo') <flux:badge color="red" size="sm" inset="top bottom">Penarikan</flux:badge>
+                                        @elseif($row->sumber_transaksi === 'pembagian_shu') <flux:badge color="purple" size="sm" inset="top bottom">SHU</flux:badge>
+                                        @else <flux:badge color="zinc" size="sm" inset="top bottom">{{ ucfirst(str_replace('_',' ',$row->sumber_transaksi)) }}</flux:badge>
+                                        @endif
+                                    </flux:table.cell>
+                                    <flux:table.cell class="text-zinc-400 text-sm">Rp {{ number_format($row->saldo_sesudah, 0, ',', '.') }}</flux:table.cell>
+                                    <flux:table.cell class="font-semibold {{ $row->jenis_mutasi === 'kredit' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400' }}">
+                                        {{ $row->jenis_mutasi === 'kredit' ? '+' : '-' }} Rp {{ number_format($row->nominal, 0, ',', '.') }}
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @empty
+                                <flux:table.row>
+                                    <flux:table.cell colspan="5" class="text-center text-zinc-400 py-8">Belum ada mutasi.</flux:table.cell>
+                                </flux:table.row>
+                            @endforelse
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
+                <div class="mt-4">{{ $this->mutasiSukarela->links() }}</div>
             </div>
-            <div class="mt-4">{{ $this->mutasiSukarela->links() }}</div>
 
         {{-- ── TAB: PENGAJUAN SETORAN ──────────── --}}
         @elseif($activeTab === 'pengajuan_setoran')
-            {{-- Mobile --}}
-            <div class="sm:hidden space-y-2">
-                @forelse($this->pengajuanSetoran as $row)
-                    <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs text-zinc-400">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</span>
-                            @if($row->status === 'pending') <flux:badge color="orange" size="sm">Pending</flux:badge>
-                            @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm">Disetujui</flux:badge>
-                            @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
-                            @endif
-                        </div>
-                        <div class="flex items-center justify-around text-sm">
-                            <div class="text-center">
-                                <div class="text-[10px] text-zinc-400">Nominal Lama</div>
-                                <div class="font-medium text-zinc-400 line-through">Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</div>
+            <div class="animate-fade-in-up">
+                {{-- Mobile --}}
+                <div class="sm:hidden space-y-2">
+                    @forelse($this->pengajuanSetoran as $row)
+                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs text-zinc-400">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</span>
+                                @if($row->status === 'pending') <flux:badge color="orange" size="sm">Pending</flux:badge>
+                                @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm">Disetujui</flux:badge>
+                                @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
+                                @endif
                             </div>
-                            <flux:icon name="arrow-right" class="w-4 h-4 text-zinc-300" />
-                            <div class="text-center">
-                                <div class="text-[10px] text-zinc-400">Nominal Baru</div>
-                                <div class="font-bold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</div>
+                            <div class="flex items-center justify-around text-sm">
+                                <div class="text-center">
+                                    <div class="text-[10px] text-zinc-400">Nominal Lama</div>
+                                    <div class="font-medium text-zinc-400 line-through">Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</div>
+                                </div>
+                                <flux:icon name="arrow-right" class="w-4 h-4 text-zinc-300" />
+                                <div class="text-center">
+                                    <div class="text-[10px] text-zinc-400">Nominal Baru</div>
+                                    <div class="font-bold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</div>
+                                </div>
                             </div>
+                            <div class="text-xs text-zinc-400 text-center mt-1.5">Berlaku: {{ Carbon::parse($row->tanggal_berlaku)->translatedFormat('F Y') }}</div>
                         </div>
-                        <div class="text-xs text-zinc-400 text-center mt-1.5">Berlaku: {{ Carbon::parse($row->tanggal_berlaku)->translatedFormat('F Y') }}</div>
-                    </div>
-                @empty
-                    <div class="text-center text-zinc-400 py-10">
-                        <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30" />
-                        <p class="text-sm">Belum ada pengajuan perubahan setoran.</p>
-                    </div>
-                @endforelse
+                    @empty
+                        <div class="text-center text-zinc-400 py-10">
+                            <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30" />
+                            <p class="text-sm">Belum ada pengajuan perubahan setoran.</p>
+                        </div>
+                    @endforelse
+                </div>
+                {{-- Desktop --}}
+                <div class="hidden sm:block overflow-x-auto">
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>Tanggal Pengajuan</flux:table.column>
+                            <flux:table.column>Nominal Lama</flux:table.column>
+                            <flux:table.column>Nominal Baru</flux:table.column>
+                            <flux:table.column>Berlaku Mulai</flux:table.column>
+                            <flux:table.column>Status</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @forelse($this->pengajuanSetoran as $row)
+                                <flux:table.row :key="'ps-'.$row->id">
+                                    <flux:table.cell class="text-zinc-400 text-sm">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</flux:table.cell>
+                                    <flux:table.cell class="text-zinc-400 line-through text-sm">Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</flux:table.cell>
+                                    <flux:table.cell class="font-semibold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</flux:table.cell>
+                                    <flux:table.cell>{{ Carbon::parse($row->tanggal_berlaku)->translatedFormat('F Y') }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        @if($row->status === 'pending') <flux:badge color="orange" size="sm" inset="top bottom">Pending</flux:badge>
+                                        @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm" inset="top bottom">Disetujui</flux:badge>
+                                        @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
+                                        @endif
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @empty
+                                <flux:table.row>
+                                    <flux:table.cell colspan="5" class="text-center text-zinc-400 py-8">Belum ada pengajuan perubahan setoran.</flux:table.cell>
+                                </flux:table.row>
+                            @endforelse
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
+                <div class="mt-4">{{ $this->pengajuanSetoran->links() }}</div>
             </div>
-            {{-- Desktop --}}
-            <div class="hidden sm:block overflow-x-auto">
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>Tanggal Pengajuan</flux:table.column>
-                        <flux:table.column>Nominal Lama</flux:table.column>
-                        <flux:table.column>Nominal Baru</flux:table.column>
-                        <flux:table.column>Berlaku Mulai</flux:table.column>
-                        <flux:table.column>Status</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @forelse($this->pengajuanSetoran as $row)
-                            <flux:table.row :key="'ps-'.$row->id">
-                                <flux:table.cell class="text-zinc-400 text-sm">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</flux:table.cell>
-                                <flux:table.cell class="text-zinc-400 line-through text-sm">Rp {{ number_format($row->nominal_lama, 0, ',', '.') }}</flux:table.cell>
-                                <flux:table.cell class="font-semibold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal_baru, 0, ',', '.') }}</flux:table.cell>
-                                <flux:table.cell>{{ Carbon::parse($row->tanggal_berlaku)->translatedFormat('F Y') }}</flux:table.cell>
-                                <flux:table.cell>
-                                    @if($row->status === 'pending') <flux:badge color="orange" size="sm" inset="top bottom">Pending</flux:badge>
-                                    @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm" inset="top bottom">Disetujui</flux:badge>
-                                    @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
-                                    @endif
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @empty
-                            <flux:table.row>
-                                <flux:table.cell colspan="5" class="text-center text-zinc-400 py-8">Belum ada pengajuan perubahan setoran.</flux:table.cell>
-                            </flux:table.row>
-                        @endforelse
-                    </flux:table.rows>
-                </flux:table>
-            </div>
-            <div class="mt-4">{{ $this->pengajuanSetoran->links() }}</div>
 
         {{-- ── TAB: PENGAJUAN TARIK ────────────── --}}
         @elseif($activeTab === 'pengajuan_tarik')
-            {{-- Mobile --}}
-            <div class="sm:hidden space-y-2">
-                @forelse($this->pengajuanTarik as $row)
-                    <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-mono text-zinc-400 truncate">{{ $row->nomor_pengajuan }}</span>
-                            @if($row->status === 'diajukan') <flux:badge color="orange" size="sm">Diajukan</flux:badge>
-                            @elseif($row->status === 'disetujui') <flux:badge color="blue" size="sm">Disetujui</flux:badge>
-                            @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm">Diproses</flux:badge>
-                            @elseif($row->status === 'selesai') <flux:badge color="green" size="sm">Selesai</flux:badge>
-                            @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
+            <div class="animate-fade-in-up">
+                {{-- Mobile --}}
+                <div class="sm:hidden space-y-2">
+                    @forelse($this->pengajuanTarik as $row)
+                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-mono text-zinc-400 truncate">{{ $row->nomor_pengajuan }}</span>
+                                @if($row->status === 'diajukan') <flux:badge color="orange" size="sm">Diajukan</flux:badge>
+                                @elseif($row->status === 'disetujui') <flux:badge color="blue" size="sm">Disetujui</flux:badge>
+                                @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm">Diproses</flux:badge>
+                                @elseif($row->status === 'selesai') <flux:badge color="green" size="sm">Selesai</flux:badge>
+                                @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
+                                @endif
+                            </div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-zinc-500">Total</span>
+                                <span class="font-bold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->total_penarikan, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="text-xs text-zinc-400">{{ $row->nama_bank }} – {{ $row->no_rekening }} · {{ $row->created_at->format('d/m/Y') }}</div>
+                            @if($row->detailPenarikanSaldo->count())
+                                <div class="flex flex-wrap gap-1 mt-1.5">
+                                    @foreach($row->detailPenarikanSaldo as $d)
+                                        <span class="text-[10px] bg-zinc-200 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full">
+                                            {{ ucwords(str_replace('_',' ',$d->sumber_saldo)) }}: Rp {{ number_format($d->nominal, 0, ',', '.') }}
+                                        </span>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-zinc-500">Total</span>
-                            <span class="font-bold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->total_penarikan, 0, ',', '.') }}</span>
+                    @empty
+                        <div class="text-center text-zinc-400 py-10">
+                            <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30" />
+                            <p class="text-sm">Belum ada pengajuan penarikan.</p>
                         </div>
-                        <div class="text-xs text-zinc-400">{{ $row->nama_bank }} – {{ $row->no_rekening }} · {{ $row->created_at->format('d/m/Y') }}</div>
-                        @if($row->detailPenarikanSaldo->count())
-                            <div class="flex flex-wrap gap-1 mt-1.5">
-                                @foreach($row->detailPenarikanSaldo as $d)
-                                    <span class="text-[10px] bg-zinc-200 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full">
-                                        {{ ucwords(str_replace('_',' ',$d->sumber_saldo)) }}: Rp {{ number_format($d->nominal, 0, ',', '.') }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-                @empty
-                    <div class="text-center text-zinc-400 py-10">
-                        <flux:icon name="inbox" class="w-10 h-10 mx-auto mb-2 opacity-30" />
-                        <p class="text-sm">Belum ada pengajuan penarikan.</p>
-                    </div>
-                @endforelse
+                    @endforelse
+                </div>
+                {{-- Desktop --}}
+                <div class="hidden sm:block overflow-x-auto">
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>No. Pengajuan</flux:table.column>
+                            <flux:table.column>Tanggal</flux:table.column>
+                            <flux:table.column>Rincian</flux:table.column>
+                            <flux:table.column>Total</flux:table.column>
+                            <flux:table.column>Rekening</flux:table.column>
+                            <flux:table.column>Status</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @forelse($this->pengajuanTarik as $row)
+                                <flux:table.row :key="'pt-'.$row->id">
+                                    <flux:table.cell class="font-mono text-xs text-zinc-400">{{ $row->nomor_pengajuan }}</flux:table.cell>
+                                    <flux:table.cell class="text-zinc-400 text-sm">{{ $row->created_at->format('d/m/Y') }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        @foreach($row->detailPenarikanSaldo as $d)
+                                            <div class="text-xs text-zinc-500">{{ ucwords(str_replace('_',' ',$d->sumber_saldo)) }}: <span class="font-medium text-zinc-700 dark:text-zinc-300">Rp {{ number_format($d->nominal, 0, ',', '.') }}</span></div>
+                                        @endforeach
+                                    </flux:table.cell>
+                                    <flux:table.cell class="font-semibold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->total_penarikan, 0, ',', '.') }}</flux:table.cell>
+                                    <flux:table.cell class="text-sm text-zinc-500">{{ $row->nama_bank }} – {{ $row->no_rekening }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        @if($row->status === 'diajukan') <flux:badge color="orange" size="sm" inset="top bottom">Diajukan</flux:badge>
+                                        @elseif($row->status === 'disetujui') <flux:badge color="blue" size="sm" inset="top bottom">Disetujui</flux:badge>
+                                        @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm" inset="top bottom">Diproses</flux:badge>
+                                        @elseif($row->status === 'selesai') <flux:badge color="green" size="sm" inset="top bottom">Selesai</flux:badge>
+                                        @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
+                                        @endif
+                                    </flux:table.cell>
+                                </flux:table.row>
+                            @empty
+                                <flux:table.row>
+                                    <flux:table.cell colspan="6" class="text-center text-zinc-400 py-8">Belum ada pengajuan penarikan.</flux:table.cell>
+                                </flux:table.row>
+                            @endforelse
+                        </flux:table.rows>
+                    </flux:table>
+                </div>
+                <div class="mt-4">{{ $this->pengajuanTarik->links() }}</div>
             </div>
-            {{-- Desktop --}}
-            <div class="hidden sm:block overflow-x-auto">
-                <flux:table>
-                    <flux:table.columns>
-                        <flux:table.column>No. Pengajuan</flux:table.column>
-                        <flux:table.column>Tanggal</flux:table.column>
-                        <flux:table.column>Rincian</flux:table.column>
-                        <flux:table.column>Total</flux:table.column>
-                        <flux:table.column>Rekening</flux:table.column>
-                        <flux:table.column>Status</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @forelse($this->pengajuanTarik as $row)
-                            <flux:table.row :key="'pt-'.$row->id">
-                                <flux:table.cell class="font-mono text-xs text-zinc-400">{{ $row->nomor_pengajuan }}</flux:table.cell>
-                                <flux:table.cell class="text-zinc-400 text-sm">{{ $row->created_at->format('d/m/Y') }}</flux:table.cell>
-                                <flux:table.cell>
-                                    @foreach($row->detailPenarikanSaldo as $d)
-                                        <div class="text-xs text-zinc-500">{{ ucwords(str_replace('_',' ',$d->sumber_saldo)) }}: <span class="font-medium text-zinc-700 dark:text-zinc-300">Rp {{ number_format($d->nominal, 0, ',', '.') }}</span></div>
-                                    @endforeach
-                                </flux:table.cell>
-                                <flux:table.cell class="font-semibold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->total_penarikan, 0, ',', '.') }}</flux:table.cell>
-                                <flux:table.cell class="text-sm text-zinc-500">{{ $row->nama_bank }} – {{ $row->no_rekening }}</flux:table.cell>
-                                <flux:table.cell>
-                                    @if($row->status === 'diajukan') <flux:badge color="orange" size="sm" inset="top bottom">Diajukan</flux:badge>
-                                    @elseif($row->status === 'disetujui') <flux:badge color="blue" size="sm" inset="top bottom">Disetujui</flux:badge>
-                                    @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm" inset="top bottom">Diproses</flux:badge>
-                                    @elseif($row->status === 'selesai') <flux:badge color="green" size="sm" inset="top bottom">Selesai</flux:badge>
-                                    @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
-                                    @endif
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @empty
-                            <flux:table.row>
-                                <flux:table.cell colspan="6" class="text-center text-zinc-400 py-8">Belum ada pengajuan penarikan.</flux:table.cell>
-                            </flux:table.row>
-                        @endforelse
-                    </flux:table.rows>
-                </flux:table>
-            </div>
-            <div class="mt-4">{{ $this->pengajuanTarik->links() }}</div>
         @endif
 
     </flux:card>

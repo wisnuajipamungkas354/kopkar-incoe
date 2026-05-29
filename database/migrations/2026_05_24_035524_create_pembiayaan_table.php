@@ -72,7 +72,11 @@ return new class extends Migration
 
             $table->timestamp('diajukan_pada')
                 ->nullable();
-            $table->foreignId('diajukan_oleh')->constrained('users')->nullOnDelete();
+                
+            $table->foreignId('diajukan_oleh')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             $table->foreignId('disetujui_bendahara_oleh')
                 ->nullable()
