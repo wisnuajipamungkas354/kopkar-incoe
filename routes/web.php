@@ -56,6 +56,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('pinjaman/create', 'pages::admin.pinjaman.create');
         Route::livewire('pinjaman/{id}/edit', 'pages::admin.pinjaman.edit');
         Route::livewire('mutasi-kas', 'pages::admin.mutasi-kas.index');
+        Route::livewire('potongan-payroll', 'pages::admin.potongan-payroll.index');
     });
     // Rute untuk anggota
     Route::group(['prefix' => 'anggota', 'middleware' => ['role:anggota']], function () {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\NamaBank;
 use App\Models\Pembiayaan;
 use App\Models\Pinjaman;
 use App\Models\User;
@@ -50,9 +51,11 @@ new #[Layout('layouts::anggota', ['title' => 'Formulir Pengajuan Pembiayaan & Pi
     public $namaBankPinjaman = '';
     public $noRekeningPinjaman = '';
     public $namaPemilikRekeningPinjaman = '';
+    public array $banks;
 
     public function mount()
     {
+        $this->banks = NamaBank::query()->whereNot('kode_bank', 'CASH')->get()->map(fn($row) => $row->kode_bank)->toArray();
         $this->tenorPinjaman = '';
         $this->itemsBarang = [
             ['rincian' => '', 'harga' => '']
@@ -62,17 +65,19 @@ new #[Layout('layouts::anggota', ['title' => 'Formulir Pengajuan Pembiayaan & Pi
         $user = auth('web')->user();
         $employee = $user->userable;
         $member = $employee ? $employee->koperasiMember : null;
+        if ($employee) {
+            $this->namaBankPembiayaan = $employee->nama_bank ? strtoupper($employee->nama_bank) : '';
+            $this->noRekeningPembiayaan = $employee->no_rekening;
+            $this->namaPemilikRekeningPembiayaan = $employee->nama_pemilik_rekening;
+
+            $this->namaBankPinjaman = $employee->nama_bank ? strtoupper($employee->nama_bank) : '';
+            $this->noRekeningPinjaman = $employee->no_rekening;
+            $this->namaPemilikRekeningPinjaman = $employee->nama_pemilik_rekening;
+        }
+
         if ($member) {
-            $this->namaBankPembiayaan = $member->nama_bank;
-            $this->noRekeningPembiayaan = $member->no_rekening;
-            $this->namaPemilikRekeningPembiayaan = $member->nama_pemilik_rekening;
-
-            $this->namaBankPinjaman = $member->nama_bank;
-            $this->noRekeningPinjaman = $member->no_rekening;
-            $this->namaPemilikRekeningPinjaman = $member->nama_pemilik_rekening;
-
             // Astra member logic & Limit calculations
-            $this->isAstra = !empty($member->join_koperasi_astra);
+            $this->isAstra = $member->is_koperasi_astra_member;
             $this->limitTotal = $this->isAstra ? 25000000 : 35000000;
 
             // Fetch active financing and loans total
@@ -507,7 +512,11 @@ new #[Layout('layouts::anggota', ['title' => 'Formulir Pengajuan Pembiayaan & Pi
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <flux:field>
                                 <flux:label>Nama Bank</flux:label>
-                                <flux:input wire:model="namaBankPembiayaan" placeholder="Contoh: BCA, Mandiri..." />
+                                <flux:select wire:model="namaBankPembiayaan" placeholder="Pilih Bank...">
+                                    @foreach($banks as $bank)
+                                        <flux:select.option value="{{ $bank }}">{{ $bank }}</flux:select.option>
+                                    @endforeach
+                                </flux:select>
                                 <flux:error name="namaBankPembiayaan" />
                             </flux:field>
                             <flux:field>
@@ -693,7 +702,11 @@ new #[Layout('layouts::anggota', ['title' => 'Formulir Pengajuan Pembiayaan & Pi
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <flux:field>
                                 <flux:label>Nama Bank</flux:label>
-                                <flux:input wire:model="namaBankPinjaman" placeholder="Contoh: BCA, Mandiri..." />
+                                <flux:select wire:model="namaBankPinjaman" placeholder="Pilih Bank...">
+                                    @foreach($banks as $bank)
+                                        <flux:select.option value="{{ $bank }}">{{ $bank }}</flux:select.option>
+                                    @endforeach
+                                </flux:select>
                                 <flux:error name="namaBankPinjaman" />
                             </flux:field>
                             <flux:field>

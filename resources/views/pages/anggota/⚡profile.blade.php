@@ -36,10 +36,13 @@ new #[Layout('layouts::anggota')] class extends Component
             $this->alamat  = $employee->alamat;
         }
 
+        if ($employee) {
+            $this->no_rekening           = $employee->no_rekening;
+            $this->nama_bank             = $employee->nama_bank;
+            $this->nama_pemilik_rekening = $employee->nama_pemilik_rekening;
+        }
+
         if ($member) {
-            $this->no_rekening           = $member->no_rekening;
-            $this->nama_bank             = $member->nama_bank;
-            $this->nama_pemilik_rekening = $member->nama_pemilik_rekening;
             $this->nama_ahli_waris       = $member->nama_ahli_waris;
             $this->hubungan_ahli_waris   = $member->hubungan_ahli_waris;
             $this->hubungan_lainnya      = $member->hubungan_lainnya;
@@ -89,13 +92,13 @@ new #[Layout('layouts::anggota')] class extends Component
             $employee->seksi   = $this->seksi;
             $employee->no_telp = $this->no_telp;
             $employee->alamat  = $this->alamat;
+            $employee->no_rekening           = $this->no_rekening;
+            $employee->nama_bank             = $this->nama_bank;
+            $employee->nama_pemilik_rekening = $this->nama_pemilik_rekening;
             $employee->save();
 
             $member = $employee->koperasiMember;
             if ($member) {
-                $member->no_rekening           = $this->no_rekening;
-                $member->nama_bank             = $this->nama_bank;
-                $member->nama_pemilik_rekening = $this->nama_pemilik_rekening;
                 $member->nama_ahli_waris       = $this->nama_ahli_waris;
                 $member->hubungan_ahli_waris   = $this->hubungan_ahli_waris;
                 $member->hubungan_lainnya      = ($this->hubungan_ahli_waris === 'lainnya') ? $this->hubungan_lainnya : null;
@@ -294,19 +297,19 @@ new #[Layout('layouts::anggota')] class extends Component
                             <div>
                                 <span class="text-zinc-500 dark:text-zinc-400 block mb-1">Nama Bank</span>
                                 <span class="font-medium text-zinc-800 dark:text-zinc-200 block bg-zinc-50 dark:bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                                    {{ $member->nama_bank ?? '-' }}
+                                    {{ $employee->nama_bank ?? '-' }}
                                 </span>
                             </div>
                             <div>
                                 <span class="text-zinc-500 dark:text-zinc-400 block mb-1">Nomor Rekening</span>
                                 <span class="font-medium text-zinc-800 dark:text-zinc-200 block bg-zinc-50 dark:bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 font-mono">
-                                    {{ $member->no_rekening ?? '-' }}
+                                    {{ $employee->no_rekening ?? '-' }}
                                 </span>
                             </div>
                             <div class="sm:col-span-2">
                                 <span class="text-zinc-500 dark:text-zinc-400 block mb-1">Nama Pemilik Rekening</span>
                                 <span class="font-medium text-zinc-800 dark:text-zinc-200 block bg-zinc-50 dark:bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                                    {{ $member->nama_pemilik_rekening ?? '-' }}
+                                    {{ $employee->nama_pemilik_rekening ?? '-' }}
                                 </span>
                             </div>
                             <div>

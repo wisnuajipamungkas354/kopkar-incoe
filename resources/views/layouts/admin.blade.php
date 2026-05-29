@@ -27,6 +27,7 @@
 
         @livewireStyles
         @fluxAppearance
+        @pwaHead
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800 antialiased">
         <flux:sidebar sticky collapsible class="bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-700">
@@ -51,6 +52,7 @@
                 <flux:sidebar.item icon="arrow-up-tray" href="{{ url('/admin/tarik-saldo') }}" wire:navigate :current="request()->is('admin/tarik-saldo')">Tarik Saldo</flux:sidebar.item>
 
                 <flux:sidebar.item icon="banknotes" href="{{ url('/admin/pinjaman') }}" wire:navigate :current="request()->is('admin/pinjaman') || request()->is('admin/pinjaman/*')">Pinjaman</flux:sidebar.item>
+                <flux:sidebar.item icon="calculator" href="{{ url('/admin/potongan-payroll') }}" wire:navigate :current="request()->is('admin/potongan-payroll')">Potongan Payroll</flux:sidebar.item>
 
                 <flux:sidebar.group expandable icon="qr-code" heading="Pembayaran" class="grid">
                     <flux:sidebar.item href="{{ url('/admin/ppob') }}" wire:navigate :current="request()->is('admin/ppob')">PPOB</flux:sidebar.item>
@@ -108,5 +110,8 @@
         <flux:toast />
         @livewireScripts
         @fluxScripts
+        @laravelPwa
+        @pwaUpdateNotifier
+        @pwaInstallButton
     </body>
 </html>

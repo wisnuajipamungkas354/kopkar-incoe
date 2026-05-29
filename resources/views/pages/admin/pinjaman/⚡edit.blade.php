@@ -109,10 +109,10 @@ new #[Layout('layouts::admin')] class extends Component
         if ($this->selectedEmployee) {
             $this->nama_pemilik_rekening = $this->selectedEmployee->nama_lengkap;
             
-            if ($this->selectedEmployee->koperasiMember) {
-                $this->nama_bank = $this->selectedEmployee->koperasiMember->nama_bank;
-                $this->no_rekening = $this->selectedEmployee->koperasiMember->no_rekening;
-                $this->nama_pemilik_rekening = $this->selectedEmployee->koperasiMember->nama_pemilik_rekening;
+            if ($this->selectedEmployee->nama_bank) {
+                $this->nama_bank = $this->selectedEmployee->nama_bank;
+                $this->no_rekening = $this->selectedEmployee->no_rekening;
+                $this->nama_pemilik_rekening = $this->selectedEmployee->nama_pemilik_rekening;
                 $this->js("Flux.toast({ text: 'Data rekening bank otomatis terisi dari profil anggota Koperasi.', variant: 'success' })");
             } else {
                 $this->nama_bank = '';

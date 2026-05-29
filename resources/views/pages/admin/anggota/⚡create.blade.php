@@ -81,7 +81,9 @@ new #[Layout('layouts::admin')] class extends Component
         $this->selectedEmployee = Employee::find($id);
 
         if ($this->selectedEmployee) {
-            $this->nama_pemilik_rekening = $this->selectedEmployee->nama_lengkap;
+            $this->nama_pemilik_rekening = $this->selectedEmployee->nama_pemilik_rekening ?: $this->selectedEmployee->nama_lengkap;
+            $this->jenis_bank = $this->selectedEmployee->nama_bank ?? '';
+            $this->no_rekening = $this->selectedEmployee->no_rekening ?? '';
         }
     }
 
@@ -96,7 +98,14 @@ new #[Layout('layouts::admin')] class extends Component
         $employee = Employee::findOrFail($this->employee_id);
 
         \DB::transaction(function () use ($employee) {
-            // 1. Create Koperasi Member
+            // 1. Update Employee with bank details
+            $employee->update([
+                'no_rekening' => $this->no_rekening,
+                'nama_bank' => $this->jenis_bank,
+                'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
+            ]);
+
+            // 2. Create Koperasi Member
             KoperasiMember::create([
                 'employee_id' => $employee->id,
                 'member_number' => 'M' . $employee->npk,
@@ -105,9 +114,6 @@ new #[Layout('layouts::admin')] class extends Component
                 'status' => 'active',
                 'is_approved' => true,
                 'approved_at' => now(),
-                'no_rekening' => $this->no_rekening,
-                'nama_bank' => $this->jenis_bank,
-                'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
                 'nama_ahli_waris' => $this->nama_ahli_waris,
                 'hubungan_ahli_waris' => $this->hubungan_ahli_waris,
                 'hubungan_lainnya' => $this->hubungan_lainnya,

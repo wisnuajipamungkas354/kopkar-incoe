@@ -102,27 +102,8 @@ class DatabaseSeeder extends Seeder
         $memberEmployees = collect($employees)->random(35);
 
         foreach ($memberEmployees as $index => $employee) {
-
-            KoperasiMember::create([
-                'employee_id' => $employee->id,
-
-                'join_koperasi_astra' => now()->subMonths(rand(1, 60)),
-
-                'join_date' => now()->subMonths(rand(1, 60)),
-
-                'status' => 'active',
-
-                'is_approved' => true,
-
-                'approved_at' => now(),
-
-                /*
-                |--------------------------------------------------------------------------
-                | Rekening
-                |--------------------------------------------------------------------------
-                */
+            $employee->update([
                 'no_rekening' => fake()->bankAccountNumber(),
-
                 'nama_bank' => fake()->randomElement([
                     'BCA',
                     'BRI',
@@ -130,8 +111,17 @@ class DatabaseSeeder extends Seeder
                     'Mandiri',
                     'CIMB',
                 ]),
-
                 'nama_pemilik_rekening' => $employee->nama_lengkap,
+            ]);
+
+            KoperasiMember::create([
+                'employee_id' => $employee->id,
+                'member_number' => 'M' . $employee->npk,
+                'join_koperasi_astra' => now()->subMonths(rand(1, 60)),
+                'join_date' => now()->subMonths(rand(1, 60)),
+                'status' => 'active',
+                'is_approved' => true,
+                'approved_at' => now(),
 
                 /*
                 |--------------------------------------------------------------------------

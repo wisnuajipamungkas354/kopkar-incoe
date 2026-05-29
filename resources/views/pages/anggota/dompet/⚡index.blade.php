@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\MutasiSaldoMember;
+use App\Models\NamaBank;
 use App\Models\PenarikanSaldo;
 use App\Models\PengajuanPerubahanPotonganPayroll;
 use App\Models\PotonganPayrollEmployee;
@@ -117,6 +118,12 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
     }
 
     #[Computed]
+    public function daftarBank()
+    {
+        return NamaBank::orderBy('nama_bank')->get();
+    }
+
+    #[Computed]
     public function pendingSetoran()
     {
         return PengajuanPerubahanPotonganPayroll::where('employee_id', $this->employeeId)
@@ -125,6 +132,19 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
     }
 
     // ── Actions ───────────────────────────────────────────────────
+
+    public function openTarikSaldo()
+    {
+        $employee = auth('web')->user()->userable;
+
+        if ($employee) {
+            $this->namaBank    = $this->namaBank    ?: ($employee->nama_bank               ?? '');
+            $this->noRekening  = $this->noRekening  ?: ($employee->no_rekening              ?? '');
+            $this->namaPemilik = $this->namaPemilik ?: ($employee->nama_pemilik_rekening     ?? '');
+        }
+
+        Flux::modal('ajukan-penarikan')->show();
+    }
 
     public function submitUbahSetoran()
     {
@@ -147,13 +167,61 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
         Flux::modal('sukses-ubah-setoran')->show();
     }
 
-    public function submitPenarikan()
+    public function getValidationRules()
     {
-        $this->validate([
+        $rules = [
             'namaBank'    => 'required|string|max:100',
             'noRekening'  => 'required|string|max:50',
             'namaPemilik' => 'required|string|max:150',
-        ]);
+        ];
+
+        if ($this->tarikSukarela) {
+            $rules['nominalSukarela'] = 'required|numeric|min:1|max:' . $this->saldoSukarela;
+        }
+        if ($this->tarikLain) {
+            $rules['nominalLain'] = 'required|numeric|min:1|max:' . $this->saldoLain;
+        }
+        if ($this->tarikShu) {
+            $rules['nominalShu'] = 'required|numeric|min:1|max:' . $this->saldoShu;
+        }
+
+        return $rules;
+    }
+
+    public function getValidationMessages()
+    {
+        return [
+            'nominalSukarela.max' => 'Nominal penarikan melebihi saldo sukarela Anda.',
+            'nominalLain.max' => 'Nominal penarikan melebihi saldo lain-lain Anda.',
+            'nominalShu.max' => 'Nominal penarikan melebihi saldo SHU Anda.',
+            'nominalSukarela.min' => 'Nominal penarikan minimal Rp 1.',
+            'nominalLain.min' => 'Nominal penarikan minimal Rp 1.',
+            'nominalShu.min' => 'Nominal penarikan minimal Rp 1.',
+            'nominalSukarela.required' => 'Nominal penarikan wajib diisi.',
+            'nominalLain.required' => 'Nominal penarikan wajib diisi.',
+            'nominalShu.required' => 'Nominal penarikan wajib diisi.',
+            'namaBank.required' => 'Nama bank wajib diisi.',
+            'noRekening.required' => 'Nomor rekening wajib diisi.',
+            'namaPemilik.required' => 'Nama pemilik rekening wajib diisi.',
+        ];
+    }
+
+    public function proceedToConfirmation()
+    {
+        $this->validate($this->getValidationRules(), $this->getValidationMessages());
+
+        if ($this->totalNominalTarik <= 0) {
+            Flux::toast(heading: 'Peringatan', text: 'Pilih minimal satu sumber saldo dengan nominal valid.', variant: 'warning');
+            return;
+        }
+
+        $this->js("Flux.modal('konfirmasi-penarikan').show()");
+        $this->js("Flux.modal('ajukan-penarikan').close()");
+    }
+
+    public function submitPenarikan()
+    {
+        $this->validate($this->getValidationRules(), $this->getValidationMessages());
 
         if ($this->totalNominalTarik <= 0) return;
 
@@ -231,14 +299,13 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
         </flux:modal.trigger>
 
         {{-- Tarik Saldo --}}
-        <flux:modal.trigger name="ajukan-penarikan">
-            <button class="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-red-400 hover:shadow-md transition-all w-full">
-                <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-500 dark:text-red-400 group-hover:scale-110 transition-transform">
-                    <flux:icon name="arrow-up-tray" class="w-5 h-5" />
-                </div>
-                <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300 text-center leading-tight">Tarik Saldo</span>
-            </button>
-        </flux:modal.trigger>
+        <button wire:click="openTarikSaldo"
+            class="group flex flex-col items-center gap-2 p-3 sm:p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-red-400 hover:shadow-md transition-all w-full">
+            <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-red-500 dark:text-red-400 group-hover:scale-110 transition-transform">
+                <flux:icon name="arrow-up-tray" class="w-5 h-5" />
+            </div>
+            <span class="text-xs font-semibold text-zinc-700 dark:text-zinc-300 text-center leading-tight">Tarik Saldo</span>
+        </button>
 
         {{-- Setor Tambahan --}}
         <flux:modal.trigger name="setor-tambahan">
@@ -584,7 +651,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
             <flux:heading size="lg">Tarik Saldo</flux:heading>
             <flux:text size="sm" class="mt-1 text-zinc-500">Pilih sumber saldo yang ingin ditarik dan masukkan rekening tujuan.</flux:text>
         </div>
-        <form x-on:submit.prevent="$flux.modal('konfirmasi-penarikan').show(); $flux.modal('ajukan-penarikan').close()" class="flex flex-col gap-4">
+        <form wire:submit.prevent="proceedToConfirmation" class="flex flex-col gap-4">
             <div class="space-y-2">
                 <flux:text class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Sumber Saldo & Nominal</flux:text>
 
@@ -593,7 +660,10 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                         label="Simpanan Sukarela — Rp {{ number_format($saldoSukarela, 0, ',', '.') }}" />
                     @if($tarikSukarela)
                         <div class="pl-6 mt-2">
-                            <flux:input wire:model.live.debounce.400ms="nominalSukarela" type="number" size="sm" placeholder="Nominal (Rp)" :max="$saldoSukarela" />
+                            <flux:field>
+                                <flux:input wire:model.live.debounce.400ms="nominalSukarela" type="number" size="sm" placeholder="Nominal (Rp)" :max="$saldoSukarela" />
+                                <flux:error name="nominalSukarela" />
+                            </flux:field>
                         </div>
                     @endif
                 </div>
@@ -603,7 +673,10 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                         label="Simpanan Lain-lain — Rp {{ number_format($saldoLain, 0, ',', '.') }}" />
                     @if($tarikLain)
                         <div class="pl-6 mt-2">
-                            <flux:input wire:model.live.debounce.400ms="nominalLain" type="number" size="sm" placeholder="Nominal (Rp)" :max="$saldoLain" />
+                            <flux:field>
+                                <flux:input wire:model.live.debounce.400ms="nominalLain" type="number" size="sm" placeholder="Nominal (Rp)" :max="$saldoLain" />
+                                <flux:error name="nominalLain" />
+                            </flux:field>
                         </div>
                     @endif
                 </div>
@@ -613,7 +686,10 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                         label="SHU — Rp {{ number_format($saldoShu, 0, ',', '.') }}" />
                     @if($tarikShu)
                         <div class="pl-6 mt-2">
-                            <flux:input wire:model.live.debounce.400ms="nominalShu" type="number" size="sm" placeholder="Nominal (Rp)" :max="$saldoShu" />
+                            <flux:field>
+                                <flux:input wire:model.live.debounce.400ms="nominalShu" type="number" size="sm" placeholder="Nominal (Rp)" :max="$saldoShu" />
+                                <flux:error name="nominalShu" />
+                            </flux:field>
                         </div>
                     @endif
                 </div>
@@ -628,10 +704,24 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
             <flux:separator variant="subtle" />
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <flux:input wire:model.live="namaBank" label="Nama Bank" placeholder="Contoh: BCA" />
-                <flux:input wire:model.live="noRekening" label="Nomor Rekening" placeholder="Contoh: 1234567890" />
+                <flux:field>
+                    <flux:label>Nama Bank</flux:label>
+                    <flux:select wire:model.live="namaBank" placeholder="Pilih bank...">
+                        @foreach($this->daftarBank as $bank)
+                            <flux:select.option value="{{ $bank->nama_bank }}">{{ $bank->nama_bank }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:error name="namaBank" />
+                </flux:field>
+                <flux:field>
+                    <flux:input wire:model.live="noRekening" label="Nomor Rekening" placeholder="Contoh: 1234567890" />
+                    <flux:error name="noRekening" />
+                </flux:field>
             </div>
-            <flux:input wire:model.live="namaPemilik" label="Nama Pemilik Rekening" placeholder="Sesuai buku tabungan" />
+            <flux:field>
+                <flux:input wire:model.live="namaPemilik" label="Nama Pemilik Rekening" placeholder="Sesuai buku tabungan" />
+                <flux:error name="namaPemilik" />
+            </flux:field>
             <flux:textarea wire:model.live="keteranganTarik" label="Keterangan (opsional)" placeholder="Tujuan penarikan..." rows="2" />
 
             <div class="flex justify-end gap-2">

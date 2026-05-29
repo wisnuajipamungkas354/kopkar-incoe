@@ -34,9 +34,9 @@ new #[Layout('layouts::admin')] class extends Component
         $this->email = $this->member->employee->user?->email ?? '';
         $this->join_date = $this->member->join_date ? $this->member->join_date->format('Y-m-d') : '';
         $this->join_koperasi_astra = $this->member->join_koperasi_astra ? $this->member->join_koperasi_astra->format('Y-m-d') : '';
-        $this->jenis_bank = $this->member->nama_bank;
-        $this->no_rekening = $this->member->no_rekening;
-        $this->nama_pemilik_rekening = $this->member->nama_pemilik_rekening;
+        $this->jenis_bank = $this->member->employee->nama_bank ?? '';
+        $this->no_rekening = $this->member->employee->no_rekening ?? '';
+        $this->nama_pemilik_rekening = $this->member->employee->nama_pemilik_rekening ?? '';
         $this->nama_ahli_waris = $this->member->nama_ahli_waris;
         $this->hubungan_ahli_waris = $this->member->hubungan_ahli_waris;
         $this->hubungan_lainnya = $this->member->hubungan_lainnya;
@@ -77,14 +77,18 @@ new #[Layout('layouts::admin')] class extends Component
         $this->validate();
 
         \DB::transaction(function () {
-            // 1. Update Koperasi Member record
+            // 1. Update Employee record with bank details
+            $this->member->employee->update([
+                'no_rekening' => $this->no_rekening,
+                'nama_bank' => $this->jenis_bank,
+                'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
+            ]);
+
+            // 2. Update Koperasi Member record
             $this->member->update([
                 'join_koperasi_astra' => $this->join_koperasi_astra ?: null,
                 'join_date' => $this->join_date,
                 'status' => $this->status,
-                'no_rekening' => $this->no_rekening,
-                'nama_bank' => $this->jenis_bank,
-                'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
                 'nama_ahli_waris' => $this->nama_ahli_waris,
                 'hubungan_ahli_waris' => $this->hubungan_ahli_waris,
                 'hubungan_lainnya' => $this->hubungan_lainnya,

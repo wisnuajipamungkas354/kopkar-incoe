@@ -21,6 +21,9 @@ class Employee extends Model
         'seksi',
         'grade_category',
         'employment_status',
+        'no_rekening',
+        'nama_bank',
+        'nama_pemilik_rekening',
     ];
 
     protected function casts(): array

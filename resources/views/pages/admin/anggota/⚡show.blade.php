@@ -189,15 +189,15 @@ new #[Layout('layouts::admin')] class extends Component
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Bank</flux:text>
-                        <flux:text class="font-medium">{{ $member->nama_bank ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->nama_bank ?? '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Nomor Rekening</flux:text>
-                        <flux:text class="font-medium">{{ $member->no_rekening ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->no_rekening ?? '-' }}</flux:text>
                     </div>
                     <div class="sm:col-span-2">
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Nama Pemilik Rekening</flux:text>
-                        <flux:text class="font-medium">{{ $member->nama_pemilik_rekening ?: '-' }}</flux:text>
+                        <flux:text class="font-medium">{{ $member->employee->nama_pemilik_rekening ?? '-' }}</flux:text>
                     </div>
                     <div>
                         <flux:text class="text-xs text-zinc-500 uppercase tracking-wider">Nama Ahli Waris</flux:text>

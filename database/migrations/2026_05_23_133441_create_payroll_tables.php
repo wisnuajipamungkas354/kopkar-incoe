@@ -107,12 +107,10 @@ return new class extends Migration
                 ->constrained('employees')
                 ->cascadeOnDelete();
 
-            $table->string('jenis_ppob'); // listrik, pdam, internet, dll
-
+            $table->string('kategori_ppob'); // listrik, pdam, internet, dll
             $table->string('nomor_pelanggan');
-
             $table->boolean('aktif')->default(true);
-
+            $table->string('catatan')->nullable();
             $table->timestamps();
         });
 

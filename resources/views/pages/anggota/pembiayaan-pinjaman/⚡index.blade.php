@@ -41,8 +41,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
         $this->jumlahAktif = $pembiayaanAktif->count() + $pinjamanAktif->count();
 
         $this->totalPlafond =
-            $pembiayaanAktif->sum(fn($i) => $i->nominal_disetujui ?: $i->nominal_pengajuan) +
-            $pinjamanAktif->sum(fn($i) => $i->nominal_disetujui ?: $i->nominal_pengajuan);
+            $pembiayaanAktif->sum(fn($i) => $i->nominal_disetujui ? : $i->nominal_pengajuan) +
+            $pinjamanAktif->sum(fn($i) => $i->nominal_disetujui ? : $i->nominal_pengajuan);
 
         $sisa = 0;
         foreach ([...$pembiayaanAktif, ...$pinjamanAktif] as $p) {
@@ -167,7 +167,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                     <div class="text-2xl sm:text-3xl font-bold tracking-tight">
                         Rp {{ number_format($totalPlafond, 0, ',', '.') }}
                     </div>
-                    <div class="text-xs opacity-60 mt-0.5">Total Plafond Aktif</div>
+                    <div class="text-xs opacity-60 mt-0.5">Sisa Plafond Aktif</div>
                 </div>
                 <a href="/anggota/pembiayaan-pinjaman/pengajuan" wire:navigate
                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold transition-all self-start">

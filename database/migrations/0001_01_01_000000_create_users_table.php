@@ -37,6 +37,10 @@ return new class extends Migration
             $table->string('grade_category')->nullable();
 
             $table->string('employment_status')->nullable();
+            
+            $table->string('no_rekening')->nullable();
+            $table->string('nama_bank')->nullable();
+            $table->string('nama_pemilik_rekening')->nullable();
 
             $table->timestamps();
         });
@@ -53,6 +57,8 @@ return new class extends Migration
             $table->foreignId('employee_id')
                 ->constrained('employees')
                 ->cascadeOnDelete();
+            $table->string('member_number')->unique()->nullable();
+            $table->boolean('is_koperasi_astra_member')->default(false);
             $table->date('join_koperasi_astra')->nullable();
             $table->date('join_date')->nullable();
             $table->date('leave_date')->nullable();
@@ -66,15 +72,6 @@ return new class extends Migration
 
             $table->boolean('is_approved')->default(false);
             $table->timestamp('approved_at')->nullable();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Informasi Rekening
-            |--------------------------------------------------------------------------
-            */
-            $table->string('no_rekening')->nullable();
-            $table->string('nama_bank')->nullable();
-            $table->string('nama_pemilik_rekening')->nullable();
 
             /*
             |--------------------------------------------------------------------------
@@ -136,6 +133,7 @@ return new class extends Migration
             $table->string('jabatan')->nullable();
 
             $table->date('hire_date')->nullable();
+            $table->date('end_date')->nullable();
 
             $table->enum('employment_status', [
                 'active',
@@ -162,7 +160,7 @@ return new class extends Migration
             $table->morphs('userable');
 
             $table->string('username')->unique();
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
 
             $table->timestamp('email_verified_at')->nullable();
 

@@ -20,10 +20,6 @@ class KoperasiMember extends Model
         'is_approved',
         'approved_at',
 
-        'no_rekening',
-        'nama_bank',
-        'nama_pemilik_rekening',
-
         'nama_ahli_waris',
         'hubungan_ahli_waris',
         'hubungan_lainnya',

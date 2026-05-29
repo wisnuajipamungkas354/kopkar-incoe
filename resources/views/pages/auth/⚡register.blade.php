@@ -8,11 +8,12 @@ use Livewire\Attributes\On;
 use Carbon\Carbon;
 use App\Mail\NotifikasiRegistrasi;
 use App\Models\Employee;
+use App\Models\NamaBank;
 use Illuminate\Support\Facades\Mail;
 
 new #[Layout('layouts.app')] class extends Component
 {
-    public array $banks = ['BCA', 'BRI', 'BNI', 'BSI', 'BJB', 'BTN', 'Mandiri', 'Bank DKI', 'Bank Muamalat', 'Seabank', 'Permata', ''];
+    public array $banks;
 
     #[Validate('required', message: 'NPK harus diisi')]
     #[Validate('min:3', message: 'NPK minimal 3 karakter')]
@@ -72,6 +73,11 @@ new #[Layout('layouts.app')] class extends Component
     #[Validate('min:1', message: 'Anda harus menyetujui persyaratan untuk melanjutkan')]
     public $persetujuan = [];
 
+    public function mount()
+    {
+        $this->banks = NamaBank::query()->whereNot('kode_bank', 'CASH')->get('kode_bank')->map(fn($row) => $row->kode_bank)->toArray();
+    }
+
     public function updatedNpk()
     {
         $isExists = User::where('username', $this->npk)->first();
@@ -121,12 +127,12 @@ new #[Layout('layouts.app')] class extends Component
             'alamat' => $this->alamat,
             'no_telp' => $this->no_telp,
             'pendidikan_terakhir' => $this->pendidikan_terakhir,
-        ]);
-
-        $employee->koperasiMember()->updateOrCreate([], [
             'nama_bank' => $this->jenis_bank,
             'no_rekening' => $this->no_rekening,
             'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
+        ]);
+
+        $employee->koperasiMember()->updateOrCreate([], [
             'nama_ahli_waris' => $this->nama_ahli_waris,
             'hubungan_ahli_waris' => $this->hubungan_ahli_waris,
             'hubungan_lainnya' => $this->hubungan_lainnya,
@@ -317,7 +323,7 @@ new #[Layout('layouts.app')] class extends Component
             <!-- Tombol Submit -->
             <div class="mt-8 flex justify-end gap-3">
                 <flux:button href="{{ url('login') }}" wire:navigate variant="subtle">Batal</flux:button>
-                <flux:button type="submit" variant="primary" :loading="true" :disabled="!in_array('setuju', $persetujuan)">Kirim Pendaftaran</flux:button>
+                <flux:button type="submit" variant="primary" :disabled="!in_array('setuju', $persetujuan)">Kirim Pendaftaran</flux:button>
             </div>
 
         </form>

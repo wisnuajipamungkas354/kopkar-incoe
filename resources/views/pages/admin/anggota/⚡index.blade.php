@@ -101,8 +101,8 @@ new #[Layout('layouts::admin')] class extends Component
                             </flux:table.cell>
                             <flux:table.cell>
                                 <div class="text-xs">
-                                    <span class="font-mono text-zinc-900 dark:text-white block">{{ $row->nama_bank }}</span>
-                                    <span class="text-zinc-500 block">{{ $row->no_rekening }}</span>
+                                    <span class="font-mono text-zinc-900 dark:text-white block">{{ $row->employee->nama_bank ?? '-' }}</span>
+                                    <span class="text-zinc-500 block">{{ $row->employee->no_rekening ?? '-' }}</span>
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell>
