@@ -23,6 +23,7 @@ new #[Layout('layouts::anggota')] class extends Component
 
     public function mount()
     {
+        Carbon::setLocale('id');
         $user = auth('web')->user();
         if (!$user || !$user->userable) return;
         $this->employeeId = $user->userable->id;
