@@ -217,7 +217,6 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
             </button>
         @endforeach
     </div>
-
     {{-- ════════════════════════════════════════════════
          TAB CONTENT
     ════════════════════════════════════════════════ --}}
