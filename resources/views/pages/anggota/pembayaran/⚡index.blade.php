@@ -157,6 +157,13 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
     }
 
     // ─── LAZIS Actions ────────────────────────────────────────────
+    public function showSetoranTambahanLazisModal($kategori)
+    {
+        $this->jenisLazisTambahan = $kategori;
+        Flux::modal('tambah-setoran-lazis')->show();
+    }
+
+
     public function submitUbahSetoran()
     {
         $this->validate([
@@ -589,7 +596,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                         Ubah
                     </flux:button>
                     <flux:button size="xs" variant="ghost" icon="plus"
-                        x-on:click="$wire.set('jenisLazisTambahan', 'zakat'); $flux.modal('tambah-setoran-lazis').show()">
+                        wire:click="showSetoranTambahanLazisModal('zakat')">
                         Tambahan
                     </flux:button>
                 </div>
@@ -620,7 +627,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
                         Ubah
                     </flux:button>
                     <flux:button size="xs" variant="ghost" icon="plus"
-                        x-on:click="$wire.set('jenisLazisTambahan', 'infaq_shodaqoh'); $flux.modal('tambah-setoran-lazis').show()">
+                        wire:click="showSetoranTambahanLazisModal('infaq_shodaqoh')">
                         Tambahan
                     </flux:button>
                 </div>
@@ -1042,7 +1049,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
         <form x-on:submit.prevent="$flux.modal('konfirmasi-ubah-setoran').show(); $flux.modal('ubah-setoran').close()" class="flex flex-col gap-4">
             <flux:field>
                 <flux:label>Program LAZIS</flux:label>
-                <flux:select wire:model.live="jenisLazisPilihan">
+                <flux:select wire:model.live="jenisLazisPilihan" disabled>
                     <flux:select.option value="zakat">Zakat</flux:select.option>
                     <flux:select.option value="infaq_shodaqoh">Infaq & Shodaqoh</flux:select.option>
                 </flux:select>
@@ -1118,7 +1125,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
         <form wire:submit="submitSetoranTambahan" class="flex flex-col gap-4">
             <flux:field>
                 <flux:label>Program LAZIS</flux:label>
-                <flux:select wire:model="jenisLazisTambahan">
+                <flux:select wire:model="jenisLazisTambahan" disabled>
                     <flux:select.option value="zakat">Zakat</flux:select.option>
                     <flux:select.option value="infaq_shodaqoh">Infaq & Shodaqoh</flux:select.option>
                 </flux:select>
@@ -1131,23 +1138,10 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
             </flux:field>
 
             <flux:field>
-                <flux:label>Metode Pembayaran</flux:label>
-                <div class="grid grid-cols-2 gap-3 mt-1">
-                    <label class="flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                                  {{ $metodeTambahan === 'payroll' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300' }}">
-                        <input type="radio" wire:model="metodeTambahan" value="payroll" class="sr-only">
-                        <flux:icon name="banknotes" class="w-6 h-6 {{ $metodeTambahan === 'payroll' ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-400' }}" />
-                        <span class="text-sm font-medium {{ $metodeTambahan === 'payroll' ? 'text-blue-700 dark:text-blue-300' : 'text-zinc-600 dark:text-zinc-400' }}">Via Payroll</span>
-                        <span class="text-[10px] text-center {{ $metodeTambahan === 'payroll' ? 'text-blue-500/80' : 'text-zinc-400' }}">Dipotong bulan depan</span>
-                    </label>
-                    <label class="flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
-                                  {{ $metodeTambahan === 'qris' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300' }}">
-                        <input type="radio" wire:model="metodeTambahan" value="qris" class="sr-only">
-                        <flux:icon name="qr-code" class="w-6 h-6 {{ $metodeTambahan === 'qris' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400' }}" />
-                        <span class="text-sm font-medium {{ $metodeTambahan === 'qris' ? 'text-emerald-700 dark:text-emerald-300' : 'text-zinc-600 dark:text-zinc-400' }}">Via QRIS</span>
-                        <span class="text-[10px] text-center {{ $metodeTambahan === 'qris' ? 'text-emerald-500/80' : 'text-zinc-400' }}">Langsung diproses</span>
-                    </label>
-                </div>
+                <flux:radio.group label="Metode Pembayaran" variant="cards" :indicator="false" class="max-sm:flex-col">
+                    <flux:radio wire:model="metodeTambahan" class="cursor-pointer" value="payroll" icon="banknotes" label="Payroll" description="Dipotong bulan depan" />
+                    <flux:radio wire:model="metodeTambahan" class="cursor-pointer" value="qris" icon="qr-code" label="QRIS" description="Langsung diproses" />
+                </flux:radio.group>
                 @error('metodeTambahan') <flux:error>{{ $message }}</flux:error> @enderror
             </flux:field>
 

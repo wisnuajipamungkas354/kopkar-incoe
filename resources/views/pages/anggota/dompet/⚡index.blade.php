@@ -41,6 +41,8 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
     public $noRekening      = '';
     public $namaPemilik     = '';
     public $keteranganTarik = '';
+    public $selectedSetoranId = null;
+    public $selectedTarikId = null;
 
     public function mount()
     {
@@ -249,6 +251,60 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
         Flux::modal('konfirmasi-penarikan')->close();
         Flux::modal('sukses-penarikan')->show();
     }
+
+    public function confirmCancelSetoran($id)
+    {
+        $this->selectedSetoranId = $id;
+        Flux::modal('konfirmasi-batal-setoran')->show();
+    }
+
+    public function cancelPengajuanSetoran()
+    {
+        if (!$this->selectedSetoranId) return;
+
+        $pengajuan = PengajuanPerubahanPotonganPayroll::where('id', $this->selectedSetoranId)
+            ->where('employee_id', $this->employeeId)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($pengajuan) {
+            $pengajuan->delete();
+            Flux::toast(heading: 'Pengajuan Dibatalkan', text: 'Pengajuan perubahan setoran sukarela berhasil dibatalkan.', variant: 'success');
+            $this->refreshBalances();
+        } else {
+            Flux::toast(heading: 'Gagal', text: 'Pengajuan tidak ditemukan atau sudah diproses oleh staff.', variant: 'danger');
+        }
+
+        $this->selectedSetoranId = null;
+        Flux::modal('konfirmasi-batal-setoran')->close();
+    }
+
+    public function confirmCancelTarik($id)
+    {
+        $this->selectedTarikId = $id;
+        Flux::modal('konfirmasi-batal-tarik')->show();
+    }
+
+    public function cancelPengajuanTarik()
+    {
+        if (!$this->selectedTarikId) return;
+
+        $penarikan = PenarikanSaldo::where('id', $this->selectedTarikId)
+            ->where('employee_id', $this->employeeId)
+            ->where('status', 'diajukan')
+            ->first();
+
+        if ($penarikan) {
+            $penarikan->delete(); // Cascades to detailPenarikanSaldo
+            Flux::toast(heading: 'Pengajuan Dibatalkan', text: 'Pengajuan penarikan saldo berhasil dibatalkan.', variant: 'success');
+            $this->refreshBalances();
+        } else {
+            Flux::toast(heading: 'Gagal', text: 'Pengajuan tidak ditemukan atau sudah diproses.', variant: 'danger');
+        }
+
+        $this->selectedTarikId = null;
+        Flux::modal('konfirmasi-batal-tarik')->close();
+    }
 };
 ?>
 
@@ -439,10 +495,16 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                         <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-xs text-zinc-400">{{ Carbon::parse($row->tanggal_pengajuan)->format('d/m/Y') }}</span>
-                                @if($row->status === 'pending') <flux:badge color="orange" size="sm">Pending</flux:badge>
-                                @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm">Disetujui</flux:badge>
-                                @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
-                                @endif
+                                <div class="flex items-center gap-2">
+                                    @if($row->status === 'pending')
+                                        <button wire:click="confirmCancelSetoran({{ $row->id }})" class="text-xs text-red-500 hover:text-red-600 font-semibold cursor-pointer">Batalkan</button>
+                                        <flux:badge color="orange" size="sm">Pending</flux:badge>
+                                    @elseif($row->status === 'disetujui')
+                                        <flux:badge color="green" size="sm">Disetujui</flux:badge>
+                                    @else
+                                        <flux:badge color="red" size="sm">Ditolak</flux:badge>
+                                    @endif
+                                </div>
                             </div>
                             <div class="flex items-center justify-around text-sm">
                                 <div class="text-center">
@@ -473,6 +535,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                             <flux:table.column>Nominal Baru</flux:table.column>
                             <flux:table.column>Berlaku Mulai</flux:table.column>
                             <flux:table.column>Status</flux:table.column>
+                            <flux:table.column>Aksi</flux:table.column>
                         </flux:table.columns>
                         <flux:table.rows>
                             @forelse($this->pengajuanSetoran as $row)
@@ -485,6 +548,13 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                                         @if($row->status === 'pending') <flux:badge color="orange" size="sm" inset="top bottom">Pending</flux:badge>
                                         @elseif($row->status === 'disetujui') <flux:badge color="green" size="sm" inset="top bottom">Disetujui</flux:badge>
                                         @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
+                                        @endif
+                                    </flux:table.cell>
+                                    <flux:table.cell>
+                                        @if($row->status === 'pending')
+                                            <flux:button wire:click="confirmCancelSetoran({{ $row->id }})" size="xs" variant="danger">Batalkan</flux:button>
+                                        @else
+                                            <span class="text-zinc-400">-</span>
                                         @endif
                                     </flux:table.cell>
                                 </flux:table.row>
@@ -508,12 +578,16 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                         <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-100 dark:border-zinc-800">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-xs font-mono text-zinc-400 truncate">{{ $row->nomor_pengajuan }}</span>
-                                @if($row->status === 'diajukan') <flux:badge color="orange" size="sm">Diajukan</flux:badge>
-                                @elseif($row->status === 'disetujui') <flux:badge color="blue" size="sm">Disetujui</flux:badge>
-                                @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm">Diproses</flux:badge>
-                                @elseif($row->status === 'selesai') <flux:badge color="green" size="sm">Selesai</flux:badge>
-                                @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
-                                @endif
+                                <div class="flex items-center gap-2">
+                                    @if($row->status === 'diajukan')
+                                        <button wire:click="confirmCancelTarik({{ $row->id }})" class="text-xs text-red-500 hover:text-red-600 font-semibold cursor-pointer">Batalkan</button>
+                                        <flux:badge color="orange" size="sm">Diajukan</flux:badge>
+                                    @elseif($row->status === 'disetujui') <flux:badge color="blue" size="sm">Disetujui</flux:badge>
+                                    @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm">Diproses</flux:badge>
+                                    @elseif($row->status === 'selesai') <flux:badge color="green" size="sm">Selesai</flux:badge>
+                                    @else <flux:badge color="red" size="sm">Ditolak</flux:badge>
+                                    @endif
+                                </div>
                             </div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span class="text-zinc-500">Total</span>
@@ -547,6 +621,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                             <flux:table.column>Total</flux:table.column>
                             <flux:table.column>Rekening</flux:table.column>
                             <flux:table.column>Status</flux:table.column>
+                            <flux:table.column>Aksi</flux:table.column>
                         </flux:table.columns>
                         <flux:table.rows>
                             @forelse($this->pengajuanTarik as $row)
@@ -566,6 +641,13 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                                         @elseif($row->status === 'diproses') <flux:badge color="cyan" size="sm" inset="top bottom">Diproses</flux:badge>
                                         @elseif($row->status === 'selesai') <flux:badge color="green" size="sm" inset="top bottom">Selesai</flux:badge>
                                         @else <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
+                                        @endif
+                                    </flux:table.cell>
+                                    <flux:table.cell>
+                                        @if($row->status === 'diajukan')
+                                            <flux:button wire:click="confirmCancelTarik({{ $row->id }})" size="xs" variant="danger">Batalkan</flux:button>
+                                        @else
+                                            <span class="text-zinc-400">-</span>
                                         @endif
                                     </flux:table.cell>
                                 </flux:table.row>
@@ -598,6 +680,44 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
         <livewire:qris />
     </flux:modal>
 
+    {{-- Modal: Konfirmasi Batal Setoran --}}
+    <flux:modal name="konfirmasi-batal-setoran" class="md:w-md space-y-5">
+        <div class="flex flex-col gap-5">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-500">
+                    <flux:icon name="exclamation-triangle" class="w-5 h-5" />
+                </div>
+                <flux:heading size="lg">Batalkan Pengajuan</flux:heading>
+            </div>
+            <flux:text size="sm" class="text-zinc-500">Apakah Anda yakin ingin membatalkan pengajuan perubahan setoran sukarela ini?</flux:text>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Kembali</flux:button>
+                </flux:modal.close>
+                <flux:button variant="primary" color="red" wire:click="cancelPengajuanSetoran">Ya, Batalkan</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Modal: Konfirmasi Batal Tarik --}}
+    <flux:modal name="konfirmasi-batal-tarik" class="md:w-md space-y-5">
+        <div class="flex flex-col gap-5">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-500">
+                    <flux:icon name="exclamation-triangle" class="w-5 h-5" />
+                </div>
+                <flux:heading size="lg">Batalkan Penarikan</flux:heading>
+            </div>
+            <flux:text size="sm" class="text-zinc-500">Apakah Anda yakin ingin membatalkan pengajuan penarikan saldo ini?</flux:text>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Kembali</flux:button>
+                </flux:modal.close>
+                <flux:button variant="primary" color="red" wire:click="cancelPengajuanTarik">Ya, Batalkan</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
     {{-- Modal: Ubah Setoran --}}
     <flux:modal name="ubah-setoran" class="md:w-lg space-y-5">
         <div>
@@ -628,7 +748,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                 <div class="text-2xl font-bold mt-1 text-zinc-800 dark:text-zinc-100">
                     Rp {{ $nominalBaru ? number_format((int)$nominalBaru, 0, ',', '.') : 0 }}
                 </div>
-                <div class="text-xs text-zinc-400 mt-0.5">per bulan · berlaku {{ Carbon::now()->addMonths(1)->firstOfMonth()->translatedFormat('F Y') }}</div>
+                <div class="text-xs text-zinc-400 mt-0.5">Berlaku {{ Carbon::now()->addMonths(1)->firstOfMonth()->translatedFormat('F Y') }}</div>
             </div>
             <div class="flex justify-end gap-2">
                 <flux:modal.close>
