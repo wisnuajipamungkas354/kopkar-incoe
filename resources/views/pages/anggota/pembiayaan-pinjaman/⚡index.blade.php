@@ -3,6 +3,7 @@
 use App\Models\Pembiayaan;
 use App\Models\Pinjaman;
 use App\Models\TagihanPayrollEmployee;
+use Flux\Flux;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
@@ -21,6 +22,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
     public $sisaTagihan  = 0;
     public $jumlahAktif  = 0;
     public $jumlahPengajuan = 0;
+    public $selectedCancelId = null;
+    public $selectedCancelTipe = null; // pembiayaan | pinjaman
 
     public function mount()
     {
@@ -144,6 +147,42 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
         }
 
         return $merged->sortByDesc('created_at');
+    }
+
+    public function confirmCancel($id, $tipe)
+    {
+        $this->selectedCancelId = $id;
+        $this->selectedCancelTipe = $tipe;
+        Flux::modal('konfirmasi-batal-pengajuan')->show();
+    }
+
+    public function cancelPengajuan()
+    {
+        if (!$this->selectedCancelId || !$this->selectedCancelTipe) return;
+
+        if ($this->selectedCancelTipe === 'pembiayaan') {
+            $pengajuan = Pembiayaan::where('id', $this->selectedCancelId)
+                ->where('employee_id', $this->employeeId)
+                ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara'])
+                ->first();
+        } else {
+            $pengajuan = Pinjaman::where('id', $this->selectedCancelId)
+                ->where('employee_id', $this->employeeId)
+                ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara'])
+                ->first();
+        }
+
+        if ($pengajuan) {
+            $pengajuan->delete();
+            Flux::toast(heading: 'Pengajuan Dibatalkan', text: 'Pengajuan ' . ($this->selectedCancelTipe === 'pembiayaan' ? 'pembiayaan' : 'pinjaman') . ' berhasil dibatalkan.', variant: 'success');
+            $this->calculateStats();
+        } else {
+            Flux::toast(heading: 'Gagal', text: 'Pengajuan tidak ditemukan atau sudah diproses oleh staff.', variant: 'danger');
+        }
+
+        $this->selectedCancelId = null;
+        $this->selectedCancelTipe = null;
+        Flux::modal('konfirmasi-batal-pengajuan')->close();
     }
 };
 ?>
@@ -383,8 +422,11 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                                 <div class="text-xs text-red-500 mt-0.5">{{ $row->alasan_penolakan }}</div>
                             </div>
                         @endif
-                        <div class="text-[10px] text-zinc-400 mt-1.5">
-                            Diajukan: {{ $row->created_at ? $row->created_at->format('d/m/Y') : '-' }}
+                        <div class="flex flex-row justify-between mt-1.5">
+                            <flux:text size="xs">Diajukan: {{ $row->created_at ? $row->created_at->format('d/m/Y') : '-' }}</flux:text>
+                            @if(in_array($row->status, ['draft', 'diajukan', 'dicairkan']))
+                                <flux:button size="xs" variant="primary" color="red" wire:click="confirmCancel({{ $row->id }}, '{{ $row->tipe }}')" class="font-semibold cursor-pointer">Batalkan</flux:button>
+                            @endif
                         </div>
                     </div>
                 @empty
@@ -406,6 +448,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                         <flux:table.column>Nominal</flux:table.column>
                         <flux:table.column>Tenor</flux:table.column>
                         <flux:table.column>Status</flux:table.column>
+                        <flux:table.column>Aksi</flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
                         @forelse($this->daftarPengajuan as $row)
@@ -442,6 +485,13 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                                         <flux:badge color="zinc" size="sm" inset="top bottom">{{ ucfirst($row->status) }}</flux:badge>
                                     @endif
                                 </flux:table.cell>
+                                <flux:table.cell>
+                                    @if(in_array($row->status, ['draft', 'diajukan', 'disetujui_bendahara']))
+                                        <flux:button wire:click="confirmCancel({{ $row->id }}, '{{ $row->tipe }}')" size="xs" variant="danger">Batalkan</flux:button>
+                                    @else
+                                        <span class="text-zinc-400">-</span>
+                                    @endif
+                                </flux:table.cell>
                             </flux:table.row>
                         @empty
                             <flux:table.row>
@@ -454,5 +504,24 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
             </div>
         @endif
     </flux:card>
+
+    {{-- Modal: Konfirmasi Batal Pengajuan --}}
+    <flux:modal name="konfirmasi-batal-pengajuan" class="md:w-md space-y-5">
+        <div class="flex flex-col gap-5">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-500">
+                    <flux:icon name="exclamation-triangle" class="w-5 h-5" />
+                </div>
+                <flux:heading size="lg">Batalkan Pengajuan</flux:heading>
+            </div>
+            <flux:text size="sm" class="text-zinc-500">Apakah Anda yakin ingin membatalkan pengajuan {{ $selectedCancelTipe === 'pembiayaan' ? 'pembiayaan' : 'pinjaman' }} ini?</flux:text>
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="ghost">Kembali</flux:button>
+                </flux:modal.close>
+                <flux:button variant="primary" color="red" wire:click="cancelPengajuan">Ya, Batalkan</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 
 </div>
