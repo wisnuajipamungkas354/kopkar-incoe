@@ -219,7 +219,7 @@ new #[Layout('layouts::anggota')] class extends Component
 
                     <flux:separator variant="subtle" />
 
-                    <flux:button size="sm" variant="primary" href="{{ url('/logout') }}" icon="arrow-right-start-on-rectangle" class="w-full text-zinc-500">
+                    <flux:button size="sm" variant="primary" href="{{ url('/logout') }}" icon="arrow-right-start-on-rectangle" class="w-full">
                         Logout
                     </flux:button>
                 </flux:card>
