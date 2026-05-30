@@ -332,13 +332,13 @@ new #[Layout('layouts::anggota', ['title' => 'Formulir Pengajuan Pembiayaan & Pi
     <div class="flex border-b border-zinc-200 dark:border-zinc-700 gap-1 overflow-x-auto">
         <button @click="activeTab = 'pembiayaan'" 
                 :class="activeTab === 'pembiayaan' ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:border-blue-400 font-semibold' : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'"
-                class="pb-3 px-1 mr-6 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 focus:outline-none">
+                class="pb-3 px-1 mr-6 text-sm font-semibold border-b-2 cursor-pointer transition-all flex items-center gap-2 focus:outline-none">
             <flux:icon name="shopping-bag" variant="outline" class="w-4 h-4" />
             <span>Pembiayaan</span>
         </button>
         <button @click="activeTab = 'pinjaman'" 
                 :class="activeTab === 'pinjaman' ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:border-blue-400 font-semibold' : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'"
-                class="pb-3 px-1 mr-6 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 focus:outline-none">
+                class="pb-3 px-1 mr-6 text-sm font-semibold border-b-2 cursor-pointer transition-all flex items-center gap-2 focus:outline-none">
             <flux:icon name="banknotes" variant="outline" class="w-4 h-4" />
             <span>Pinjaman</span>
         </button>

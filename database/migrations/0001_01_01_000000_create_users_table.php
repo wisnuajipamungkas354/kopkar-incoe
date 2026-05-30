@@ -82,6 +82,11 @@ return new class extends Migration
             $table->string('hubungan_ahli_waris', 100)->nullable();
             $table->string('hubungan_lainnya')->nullable();
 
+            $table->decimal('saldo_simpanan_pokok', 15, 2)->default(0);
+            $table->decimal('saldo_simpanan_wajib', 15, 2)->default(0);
+            $table->decimal('saldo_simpanan_sukarela', 15, 2)->default(0);
+            $table->decimal('saldo_simpanan_lain_lain', 15, 2)->default(0);
+            $table->decimal('saldo_shu', 15, 2)->default(0);
             $table->timestamps();
         });
 

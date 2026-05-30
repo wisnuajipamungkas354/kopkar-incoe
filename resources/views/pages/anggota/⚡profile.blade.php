@@ -156,7 +156,7 @@ new #[Layout('layouts::anggota')] class extends Component
         @endphp
         @foreach($tabs as $key => $tab)
             <button wire:click="switchTab('{{ $key }}')"
-                    class="pb-3 px-1 mr-4 text-sm font-semibold border-b-2 transition-all flex items-center gap-2
+                    class="pb-3 px-1 mr-4 text-sm font-semibold border-b-2 cursor-pointer transition-all flex items-center gap-2
                            {{ $activeTab === $key
                               ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                               : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">

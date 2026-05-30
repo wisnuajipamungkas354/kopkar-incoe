@@ -206,7 +206,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
         @endphp
         @foreach($tabs as $key => $label)
             <button wire:click="switchTab('{{ $key }}')"
-                    class="shrink-0 pb-3 px-1 text-sm font-semibold border-b-2 transition-all
+                    class="shrink-0 pb-3 px-1 text-sm font-semibold border-b-2 cursor-pointer transition-all
                            {{ $activeTab === $key
                               ? 'border-blue-500 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                               : 'border-transparent text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300' }}">
