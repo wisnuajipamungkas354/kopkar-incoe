@@ -19,22 +19,23 @@ return new class extends Migration
             $table->string('no_rekening');
             $table->string('nama_bank'); //BCA, BRI, BNI, BTN
             $table->string('nama_pemilik_rekening');
-            $table->enum('status', ['diajukan', 'disetujui', 'ditolak', 'diproses', 'selesai'])->default('diajukan');
+            $table->enum('status', ['diajukan', 'diproses', 'dibatalkan', 'ditolak', 'selesai'])->default('diajukan');
 
-            $table->foreignId('diajukan_oleh')->nullable()->constrained('users')->nullOnDelete();
+            $table->date('tanggal_pencairan')->nullable();
+            
+            $table->string('diajukan_oleh')->nullable();
             $table->timestamp('diajukan_pada')->nullable();
-            $table->foreignId('disetujui_oleh')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('disetujui_pada')->nullable();
 
-            $table->foreignId('ditolak_oleh')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('diproses_oleh')->nullable();
+            $table->timestamp('diproses_pada')->nullable();
+
+             $table->string('dibatalkan_oleh')->nullable();
+            $table->timestamp('dibatalkan_pada')->nullable();
+
+            $table->string('ditolak_oleh')->nullable();
             $table->timestamp('ditolak_pada')->nullable();
             $table->text('alasan_penolakan')->nullable();
 
-            $table->foreignId('diproses_oleh')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('diproses_pada')->nullable();
-
-            $table->foreignId('diselesaikan_oleh')->nullable()->constrained('users')->nullOnDelete();
-            $table->timestamp('diselesaikan_pada')->nullable();
             $table->text('catatan')->nullable();
 
             $table->timestamps();
@@ -43,7 +44,7 @@ return new class extends Migration
         Schema::create('detail_penarikan_saldo', function (Blueprint $table) {
             $table->id();
             $table->foreignId('penarikan_saldo_id')->constrained('penarikan_saldo')->cascadeOnDelete();
-            $table->string('sumber_saldo'); //simpanan pokok, simpanan wajib, simpanan sukarela
+            $table->string('sumber_saldo'); // simpanan sukarela, simpanan-lain-lain, shu
             $table->decimal('nominal', 15, 2);
             $table->timestamps();
         });

@@ -133,14 +133,12 @@ new #[Layout('layouts::admin')] class extends Component
                                     <flux:badge color="zinc" size="sm" icon="pencil">Draft</flux:badge>
                                 @elseif($row->status === 'diajukan')
                                     <flux:badge color="orange" size="sm" icon="clock">Diajukan</flux:badge>
-                                @elseif($row->status === 'disetujui_bendahara')
-                                    <flux:badge color="sky" size="sm" icon="clock">Setuju Bendahara</flux:badge>
-                                @elseif($row->status === 'disetujui_ketua')
-                                    <flux:badge color="teal" size="sm" icon="check-circle">Setuju Ketua</flux:badge>
+                                @elseif($row->status === 'diproses')
+                                    <flux:badge color="sky" size="sm" icon="clock">Diproses</flux:badge>
                                 @elseif($row->status === 'ditolak')
                                     <flux:badge color="red" size="sm" icon="x-mark">Ditolak</flux:badge>
-                                @elseif($row->status === 'dicairkan')
-                                    <flux:badge color="indigo" size="sm" icon="banknotes">Dicairkan</flux:badge>
+                                @elseif($row->status === 'dibatalkan')
+                                    <flux:badge color="zinc" size="sm" icon="x-circle">Dibatalkan</flux:badge>
                                 @elseif($row->status === 'berjalan')
                                     <flux:badge color="blue" size="sm" icon="arrow-path">Berjalan</flux:badge>
                                 @elseif($row->status === 'lunas')

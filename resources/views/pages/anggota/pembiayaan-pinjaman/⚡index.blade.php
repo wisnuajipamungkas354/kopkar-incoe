@@ -8,6 +8,8 @@ use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class extends Component
 {
@@ -44,21 +46,21 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
         $this->jumlahAktif = $pembiayaanAktif->count() + $pinjamanAktif->count();
 
         $this->totalPlafond =
-            $pembiayaanAktif->sum(fn($i) => $i->nominal_disetujui ? : $i->nominal_pengajuan) +
-            $pinjamanAktif->sum(fn($i) => $i->nominal_disetujui ? : $i->nominal_pengajuan);
+            $pembiayaanAktif->sum(fn($i) => $i->nominal_disetujui ?: $i->nominal_pengajuan) +
+            $pinjamanAktif->sum(fn($i) => $i->nominal_disetujui ?: $i->nominal_pengajuan);
 
         $sisa = 0;
         foreach ([...$pembiayaanAktif, ...$pinjamanAktif] as $p) {
             $lunasCount = $p->tagihanPayrollEmployee ? $p->tagihanPayrollEmployee->where('status', 'lunas')->count() : 0;
             $total = $p->total_pembiayaan ?: ($p->nominal_angsuran * $p->tenor_bulan);
-            $sisa += max(0, $total - $lunasCount * $p->nominal_angsuran);
+            $sisa += max(0, $total - $lunasCount * ($p->nominal_angsuran ?? 0));
         }
         $this->sisaTagihan = $sisa;
 
         $this->jumlahPengajuan = Pembiayaan::where('employee_id', $this->employeeId)
-            ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara', 'disetujui_ketua'])->count()
+            ->whereIn('status', ['diajukan', 'diproses'])->count()
             + Pinjaman::where('employee_id', $this->employeeId)
-            ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara', 'disetujui_ketua'])->count();
+            ->whereIn('status', ['diajukan', 'diproses'])->count();
     }
 
     public function switchTab($tab)
@@ -115,7 +117,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
     public function daftarPengajuan()
     {
         $pembiayaan = Pembiayaan::where('employee_id', $this->employeeId)
-            ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara', 'disetujui_ketua', 'ditolak'])
+            ->whereIn('status', ['diajukan', 'diproses', 'ditolak', 'dibatalkan'])
             ->get()
             ->map(function ($item) {
                 $item->tipe = 'pembiayaan';
@@ -126,7 +128,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
             });
 
         $pinjaman = Pinjaman::where('employee_id', $this->employeeId)
-            ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara', 'disetujui_ketua', 'ditolak'])
+            ->whereIn('status', ['diajukan', 'diproses', 'ditolak', 'dibatalkan'])
             ->get()
             ->map(function ($item) {
                 $item->tipe = 'pinjaman';
@@ -163,21 +165,27 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
         if ($this->selectedCancelTipe === 'pembiayaan') {
             $pengajuan = Pembiayaan::where('id', $this->selectedCancelId)
                 ->where('employee_id', $this->employeeId)
-                ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara'])
+                ->where('status', 'diajukan') // hanya bisa batalkan jika masih diajukan
                 ->first();
         } else {
             $pengajuan = Pinjaman::where('id', $this->selectedCancelId)
                 ->where('employee_id', $this->employeeId)
-                ->whereIn('status', ['draft', 'diajukan', 'disetujui_bendahara'])
+                ->where('status', 'diajukan') // hanya bisa batalkan jika masih diajukan
                 ->first();
         }
 
         if ($pengajuan) {
-            $pengajuan->delete();
+            DB::transaction(function () use ($pengajuan) {
+                $pengajuan->update([
+                    'status'           => 'dibatalkan',
+                    'dibatalkan_oleh'  => auth('web')->user()->id,
+                    'dibatalkan_pada'  => now(),
+                ]);
+            });
             Flux::toast(heading: 'Pengajuan Dibatalkan', text: 'Pengajuan ' . ($this->selectedCancelTipe === 'pembiayaan' ? 'pembiayaan' : 'pinjaman') . ' berhasil dibatalkan.', variant: 'success');
             $this->calculateStats();
         } else {
-            Flux::toast(heading: 'Gagal', text: 'Pengajuan tidak ditemukan atau sudah diproses oleh staff.', variant: 'danger');
+            Flux::toast(heading: 'Gagal', text: 'Pengajuan tidak ditemukan atau sudah diproses oleh staff dan tidak dapat dibatalkan.', variant: 'danger');
         }
 
         $this->selectedCancelId = null;
@@ -394,16 +402,14 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                                     @else
                                         <flux:badge color="purple" size="sm">Pinjaman</flux:badge>
                                     @endif
-                                    @if($row->status === 'draft')
-                                        <flux:badge color="zinc" size="sm">Draft</flux:badge>
-                                    @elseif($row->status === 'diajukan')
+                                    @if($row->status === 'diajukan')
                                         <flux:badge color="orange" size="sm">Menunggu</flux:badge>
-                                    @elseif($row->status === 'disetujui_bendahara')
-                                        <flux:badge color="blue" size="sm">Acc Bendahara</flux:badge>
-                                    @elseif($row->status === 'disetujui_ketua')
-                                        <flux:badge color="teal" size="sm">Acc Ketua</flux:badge>
+                                    @elseif($row->status === 'diproses')
+                                        <flux:badge color="sky" size="sm">Diproses</flux:badge>
                                     @elseif($row->status === 'ditolak')
                                         <flux:badge color="red" size="sm">Ditolak</flux:badge>
+                                    @elseif($row->status === 'dibatalkan')
+                                        <flux:badge color="zinc" size="sm">Dibatalkan</flux:badge>
                                     @else
                                         <flux:badge color="zinc" size="sm">{{ ucfirst($row->status) }}</flux:badge>
                                     @endif
@@ -424,7 +430,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                         @endif
                         <div class="flex flex-row justify-between mt-1.5">
                             <flux:text size="xs">Diajukan: {{ $row->created_at ? $row->created_at->format('d/m/Y') : '-' }}</flux:text>
-                            @if(in_array($row->status, ['draft', 'diajukan', 'dicairkan']))
+                            @if($row->status === 'diajukan')
                                 <flux:button size="xs" variant="primary" color="red" wire:click="confirmCancel({{ $row->id }}, '{{ $row->tipe }}')" class="font-semibold cursor-pointer">Batalkan</flux:button>
                             @endif
                         </div>
@@ -466,14 +472,10 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                                 <flux:table.cell class="font-semibold text-zinc-800 dark:text-zinc-200">Rp {{ number_format($row->nominal_label, 0, ',', '.') }}</flux:table.cell>
                                 <flux:table.cell class="text-sm text-zinc-500">{{ $row->tenor_bulan }} Bulan</flux:table.cell>
                                 <flux:table.cell>
-                                    @if($row->status === 'draft')
-                                        <flux:badge color="zinc" size="sm" inset="top bottom">Draft</flux:badge>
-                                    @elseif($row->status === 'diajukan')
-                                        <flux:badge color="orange" size="sm" inset="top bottom">Menunggu Bendahara</flux:badge>
-                                    @elseif($row->status === 'disetujui_bendahara')
-                                        <flux:badge color="blue" size="sm" inset="top bottom">Menunggu Ketua</flux:badge>
-                                    @elseif($row->status === 'disetujui_ketua')
-                                        <flux:badge color="teal" size="sm" inset="top bottom">Disetujui Ketua</flux:badge>
+                                    @if($row->status === 'diajukan')
+                                        <flux:badge color="orange" size="sm" inset="top bottom">Menunggu Diproses</flux:badge>
+                                    @elseif($row->status === 'diproses')
+                                        <flux:badge color="sky" size="sm" inset="top bottom">Sedang Diproses</flux:badge>
                                     @elseif($row->status === 'ditolak')
                                         <div>
                                             <flux:badge color="red" size="sm" inset="top bottom">Ditolak</flux:badge>
@@ -481,12 +483,14 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                                                 <div class="text-[10px] text-red-500 mt-0.5 max-w-[200px] truncate">{{ $row->alasan_penolakan }}</div>
                                             @endif
                                         </div>
+                                    @elseif($row->status === 'dibatalkan')
+                                        <flux:badge color="zinc" size="sm" inset="top bottom">Dibatalkan</flux:badge>
                                     @else
                                         <flux:badge color="zinc" size="sm" inset="top bottom">{{ ucfirst($row->status) }}</flux:badge>
                                     @endif
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    @if(in_array($row->status, ['draft', 'diajukan', 'disetujui_bendahara']))
+                                    @if($row->status === 'diajukan')
                                         <flux:button wire:click="confirmCancel({{ $row->id }}, '{{ $row->tipe }}')" size="xs" variant="danger">Batalkan</flux:button>
                                     @else
                                         <span class="text-zinc-400">-</span>

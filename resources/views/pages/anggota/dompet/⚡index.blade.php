@@ -14,6 +14,7 @@ use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
 use Carbon\Carbon;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 
 new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 {
@@ -244,25 +245,27 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 
         if ($this->totalNominalTarik <= 0) return;
 
-        $penarikan = PenarikanSaldo::create([
-            'nomor_pengajuan'       => 'TARIK-' . strtoupper(uniqid()),
-            'employee_id'           => $this->employeeId,
-            'total_penarikan'       => $this->totalNominalTarik,
-            'no_rekening'           => $this->noRekening,
-            'nama_bank'             => $this->namaBank,
-            'nama_pemilik_rekening' => $this->namaPemilik,
-            'status'                => 'diajukan',
-            'diajukan_oleh'         => $this->userId,
-            'diajukan_pada'         => Carbon::now(),
-            'catatan'               => $this->keteranganTarik,
-        ]);
+        DB::transaction(function () {
+            $penarikan = PenarikanSaldo::create([
+                'nomor_pengajuan'       => 'TARIK-' . strtoupper(uniqid()),
+                'employee_id'           => $this->employeeId,
+                'total_penarikan'       => $this->totalNominalTarik,
+                'no_rekening'           => $this->noRekening,
+                'nama_bank'             => $this->namaBank,
+                'nama_pemilik_rekening' => $this->namaPemilik,
+                'status'                => 'diajukan',
+                'diajukan_oleh'         => $this->userId,
+                'diajukan_pada'         => Carbon::now(),
+                'catatan'               => $this->keteranganTarik,
+            ]);
 
-        if ($this->tarikSukarela && (int)$this->nominalSukarela > 0)
-            $penarikan->detailPenarikanSaldo()->create(['sumber_saldo' => 'simpanan_sukarela', 'nominal' => (int)$this->nominalSukarela]);
-        if ($this->tarikLain && (int)$this->nominalLain > 0)
-            $penarikan->detailPenarikanSaldo()->create(['sumber_saldo' => 'simpanan_lain_lain', 'nominal' => (int)$this->nominalLain]);
-        if ($this->tarikShu && (int)$this->nominalShu > 0)
-            $penarikan->detailPenarikanSaldo()->create(['sumber_saldo' => 'shu', 'nominal' => (int)$this->nominalShu]);
+            if ($this->tarikSukarela && (int)$this->nominalSukarela > 0)
+                $penarikan->detailPenarikanSaldo()->create(['sumber_saldo' => 'simpanan_sukarela', 'nominal' => (int)$this->nominalSukarela]);
+            if ($this->tarikLain && (int)$this->nominalLain > 0)
+                $penarikan->detailPenarikanSaldo()->create(['sumber_saldo' => 'simpanan_lain_lain', 'nominal' => (int)$this->nominalLain]);
+            if ($this->tarikShu && (int)$this->nominalShu > 0)
+                $penarikan->detailPenarikanSaldo()->create(['sumber_saldo' => 'shu', 'nominal' => (int)$this->nominalShu]);
+        });
 
         $this->reset(['tarikSukarela','tarikLain','tarikShu','nominalSukarela','nominalLain','nominalShu','namaBank','noRekening','namaPemilik','keteranganTarik']);
         Flux::modal('konfirmasi-penarikan')->close();

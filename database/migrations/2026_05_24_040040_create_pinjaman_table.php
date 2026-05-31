@@ -31,51 +31,28 @@ return new class extends Migration
             $table->string('nama_pemilik_rekening');
 
             $table->enum('status', [
-                'draft',
                 'diajukan',
-                'disetujui_bendahara',
-                'disetujui_ketua',
+                'diproses',
                 'ditolak',
-                'dicairkan',
+                'dibatalkan',
                 'berjalan',
                 'lunas',
-            ])->default('draft');
+            ])->default('diajukan');
 
-            $table->foreignId('diajukan_oleh')->nullable()->constrained('users')->nullOnDelete();
+            $table->date('tanggal_pencairan')->nullable();
+
+            $table->string('diajukan_oleh')->nullable();
             $table->timestamp('diajukan_pada')->nullable();
 
-            $table->foreignId('disetujui_bendahara_oleh')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
-            $table->timestamp('disetujui_bendahara_pada')
-                ->nullable();
-
-            $table->foreignId('disetujui_ketua_oleh')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
-            $table->timestamp('disetujui_ketua_pada')
-                ->nullable();
-
-            $table->foreignId('ditolak_oleh')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
-            $table->timestamp('ditolak_pada')
-                ->nullable();
-
-            $table->text('alasan_penolakan')->nullable();
-
-            $table->foreignId('diproses_oleh')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
+            $table->string('diproses_oleh')->nullable();
             $table->timestamp('diproses_pada')->nullable();
+
+            $table->string('dibatalkan_oleh')->nullable();
+            $table->timestamp('dibatalkan_pada')->nullable();
+
+            $table->string('ditolak_oleh')->nullable();
+            $table->timestamp('ditolak_pada')->nullable();
+            $table->text('alasan_penolakan')->nullable();
 
             $table->text('catatan')->nullable();
 
@@ -91,3 +68,4 @@ return new class extends Migration
         Schema::dropIfExists('pinjaman');
     }
 };
+

@@ -28,7 +28,6 @@ return new class extends Migration
             $table->enum('metode_transaksi', [
                 'transfer',
                 'cash',
-                'payroll',
             ]);
 
             $table->text('keterangan')->nullable();

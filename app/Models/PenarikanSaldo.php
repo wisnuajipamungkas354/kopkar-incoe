@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class PenarikanSaldo extends Model
@@ -17,6 +18,11 @@ class PenarikanSaldo extends Model
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class, 'diajukan_oleh');
+        return $this->belongsTo(Employee::class);
+    }
+
+    public function scopeByEmployee(Builder $query): void
+    {
+        $query->where('employee_id', auth('web')->user()->userable->id);
     }
 }

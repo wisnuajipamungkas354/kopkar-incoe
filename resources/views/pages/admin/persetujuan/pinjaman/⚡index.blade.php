@@ -5,9 +5,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
 use Livewire\WithPagination;
 use App\Models\Pinjaman;
-use App\Models\User;
-use App\Mail\NotifikasiPersetujuanPinjaman;
-use Illuminate\Support\Facades\Mail;
+use App\Models\TagihanPayrollEmployee;
+use Illuminate\Support\Facades\DB;
 use Flux\Flux;
 
 new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class extends Component
@@ -22,13 +21,13 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
     public function pengajuan()
     {
         $data = Pinjaman::with(['employee', 'employee.user'])
-                ->whereIn('status', ['diajukan', 'disetujui_bendahara', 'disetujui_ketua', 'dicairkan'])
+                ->whereIn('status', ['diajukan', 'diproses'])
                 ->orderBy('updated_at', 'DESC')
                 ->get();
 
         if (!empty($this->search)) {
             return $data->filter(function($item) {
-                return stripos($item->employee->nama_lengkap ?? '', $this->search) !== false || 
+                return stripos($item->employee->nama_lengkap ?? '', $this->search) !== false ||
                        stripos($item->employee->npk ?? '', $this->search) !== false ||
                        stripos($item->nomor_pengajuan ?? '', $this->search) !== false ||
                        stripos($item->jenis_pinjaman ?? '', $this->search) !== false;
@@ -40,156 +39,153 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
 
     public function detailPengajuan($id)
     {
-        $this->selectedPinjaman = $this->pengajuan()->firstWhere('id', $id);
+        $this->selectedPinjaman = Pinjaman::with(['employee', 'employee.user'])->find($id);
         $this->alasanPenolakan = '';
         Flux::modal('detail-pengajuan')->show();
     }
 
-    public function approveBendahara($id)
+    /**
+     * Proses & Cairkan Pinjaman sekaligus (diajukan → diproses → berjalan)
+     * Hitung angsuran, set tanggal_pencairan, generate tagihan payroll
+     */
+    public function prosesDanAktifkan($id)
     {
-        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
-            $this->selectedPinjaman = Pinjaman::find($id);
-        }
+        $pinjaman = Pinjaman::find($id);
 
-        if (!$this->selectedPinjaman) {
-            Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
+        if (!$pinjaman || $pinjaman->status !== 'diajukan') {
+            Flux::toast(heading: 'Error', text: 'Data tidak ditemukan atau status tidak valid.', variant: 'danger');
             return;
         }
 
-        $this->selectedPinjaman->update([
-            'status' => 'disetujui_bendahara',
-            'disetujui_bendahara_oleh' => auth('web')->user()->id,
-            'disetujui_bendahara_pada' => now(),
-        ]);
+        DB::transaction(function () use ($pinjaman) {
+            $nominal     = (float) $pinjaman->nominal_pengajuan;
+            $tenor       = (int) $pinjaman->tenor_bulan;
+            $nomAngsuran = $nominal / $tenor;
 
-        $user = User::with('userable')
-            ->where('userable_type', 'App\Models\Employee')
-            ->where('userable_id', $this->selectedPinjaman->employee_id)
-            ->first();
+            // Langsung set berjalan: diproses → berjalan dalam satu aksi
+            $pinjaman->update([
+                'status'            => 'berjalan',
+                'nominal_disetujui' => $nominal,
+                'nominal_angsuran'  => $nomAngsuran,
+                'tanggal_pencairan' => now()->toDateString(),
+                'diproses_oleh'     => auth('web')->user()->id,
+                'diproses_pada'     => now(),
+            ]);
 
-        if ($user) {
-            Mail::to($user->email)->send(new NotifikasiPersetujuanPinjaman(
-                namaAnggota: $user->userable->nama_lengkap,
-                statusApprove: 'disetujui_bendahara',
-                nomorPengajuan: $this->selectedPinjaman->nomor_pengajuan,
-                nominal: $this->selectedPinjaman->nominal_pengajuan
-            ));
-        }
+            // Generate tagihan payroll pertama
+            TagihanPayrollEmployee::create([
+                'employee_id'           => $pinjaman->employee_id,
+                'jenis_tagihan'         => 'pinjaman',
+                'tagihanable_type'      => Pinjaman::class,
+                'tagihanable_id'        => $pinjaman->id,
+                'periode_bulan'         => now()->format('m'),
+                'periode_tahun'         => now()->format('Y'),
+                'periode_payroll_bulan' => now()->addMonth()->format('m'),
+                'periode_payroll_tahun' => now()->addMonth()->format('Y'),
+                'nominal'               => $nomAngsuran,
+                'status'                => 'pending',
+                'keterangan'            => 'Angsuran Pinjaman ' . $pinjaman->nomor_pengajuan,
+            ]);
+        });
 
         Flux::toast(
-            heading: 'Disetujui Bendahara',
-            text: 'Pengajuan pinjaman telah disetujui oleh Bendahara dan menunggu persetujuan Ketua.',
+            heading: 'Pinjaman Disetujui & Berjalan',
+            text: 'Pinjaman telah diproses, dicairkan, dan cicilan telah diaktifkan.',
             variant: 'success',
         );
 
         Flux::modal('detail-pengajuan')->close();
         $this->selectedPinjaman = null;
+        unset($this->pengajuan);
     }
 
-    public function approveKetua($id)
+    /**
+     * Proses saja (diajukan → diproses) — untuk review sebelum cairkan
+     */
+    public function prosesPengajuan($id)
     {
-        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
-            $this->selectedPinjaman = Pinjaman::find($id);
-        }
+        $pinjaman = Pinjaman::find($id);
 
-        if (!$this->selectedPinjaman) {
-            Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
+        if (!$pinjaman || $pinjaman->status !== 'diajukan') {
+            Flux::toast(heading: 'Error', text: 'Data tidak ditemukan atau status tidak valid.', variant: 'danger');
             return;
         }
 
-        $nominal = (float) $this->selectedPinjaman->nominal_pengajuan;
-        $tenor = (int) $this->selectedPinjaman->tenor_bulan;
-        $nominalAngsuran = $nominal / $tenor;
-
-        $this->selectedPinjaman->update([
-            'status' => 'disetujui_ketua',
-            'nominal_disetujui' => $nominal,
-            'nominal_angsuran' => $nominalAngsuran,
-            'disetujui_ketua_oleh' => auth('web')->user()->id,
-            'disetujui_ketua_pada' => now(),
-        ]);
-
-        $user = User::with('userable')
-            ->where('userable_type', 'App\Models\Employee')
-            ->where('userable_id', $this->selectedPinjaman->employee_id)
-            ->first();
-
-        if ($user) {
-            Mail::to($user->email)->send(new NotifikasiPersetujuanPinjaman(
-                namaAnggota: $user->userable->nama_lengkap,
-                statusApprove: 'disetujui_ketua',
-                nomorPengajuan: $this->selectedPinjaman->nomor_pengajuan,
-                nominal: $this->selectedPinjaman->nominal_pengajuan
-            ));
-        }
+        DB::transaction(function () use ($pinjaman) {
+            $pinjaman->update([
+                'status'        => 'diproses',
+                'diproses_oleh' => auth('web')->user()->id,
+                'diproses_pada' => now(),
+            ]);
+        });
 
         Flux::toast(
-            heading: 'Disetujui Ketua',
-            text: 'Pengajuan pinjaman telah disetujui sepenuhnya oleh Ketua.',
+            heading: 'Sedang Diproses',
+            text: 'Pengajuan pinjaman sedang diproses. Silakan aktifkan cicilan bila dana sudah dicairkan.',
             variant: 'success',
         );
 
         Flux::modal('detail-pengajuan')->close();
         $this->selectedPinjaman = null;
+        unset($this->pengajuan);
     }
 
-    public function approveStaffKoperasi($id)
+    /**
+     * Aktifkan cicilan (diproses → berjalan)
+     * Set tanggal_pencairan & generate tagihan payroll
+     */
+    public function aktifkanCicilan($id)
     {
-        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
-            $this->selectedPinjaman = Pinjaman::find($id);
-        }
+        $pinjaman = Pinjaman::find($id);
 
-        if (!$this->selectedPinjaman) {
-            Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
+        if (!$pinjaman || $pinjaman->status !== 'diproses') {
+            Flux::toast(heading: 'Error', text: 'Data tidak ditemukan atau status tidak valid.', variant: 'danger');
             return;
         }
 
-        $this->selectedPinjaman->update([
-            'status' => 'dicairkan',
-        ]);
+        DB::transaction(function () use ($pinjaman) {
+            $nominal     = (float) $pinjaman->nominal_pengajuan;
+            $tenor       = (int) $pinjaman->tenor_bulan;
+            $nomAngsuran = $nominal / $tenor;
+
+            $pinjaman->update([
+                'status'            => 'berjalan',
+                'nominal_disetujui' => $nominal,
+                'nominal_angsuran'  => $nomAngsuran,
+                'tanggal_pencairan' => now()->toDateString(),
+            ]);
+
+            TagihanPayrollEmployee::create([
+                'employee_id'           => $pinjaman->employee_id,
+                'jenis_tagihan'         => 'pinjaman',
+                'tagihanable_type'      => Pinjaman::class,
+                'tagihanable_id'        => $pinjaman->id,
+                'periode_bulan'         => now()->format('m'),
+                'periode_tahun'         => now()->format('Y'),
+                'periode_payroll_bulan' => now()->addMonth()->format('m'),
+                'periode_payroll_tahun' => now()->addMonth()->format('Y'),
+                'nominal'               => $nomAngsuran,
+                'status'                => 'pending',
+                'keterangan'            => 'Angsuran Pinjaman ' . $pinjaman->nomor_pengajuan,
+            ]);
+        });
 
         Flux::toast(
-            heading: 'Diproses Staff',
-            text: 'Dana pinjaman telah dicairkan oleh staff koperasi.',
+            heading: 'Cicilan Aktif',
+            text: 'Pinjaman telah aktif dan tagihan cicilan pertama telah dibuat.',
             variant: 'success',
         );
 
         Flux::modal('detail-pengajuan')->close();
         $this->selectedPinjaman = null;
-    }
-
-    public function aktivasiCicilan($id)
-    {
-        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
-            $this->selectedPinjaman = Pinjaman::find($id);
-        }
-
-        if (!$this->selectedPinjaman) {
-            Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
-            return;
-        }
-
-        $this->selectedPinjaman->update([
-            'status' => 'berjalan',
-        ]);
-
-        Flux::toast(
-            heading: 'Diaktivasi Staff',
-            text: 'Pinjaman telah diaktifkan oleh staff koperasi.',
-            variant: 'success',
-        );
-
-        Flux::modal('detail-pengajuan')->close();
-        $this->selectedPinjaman = null;
+        unset($this->pengajuan);
     }
 
     public function tolak($id)
     {
-        if (!$this->selectedPinjaman || $this->selectedPinjaman->id !== $id) {
-            $this->selectedPinjaman = Pinjaman::find($id);
-        }
+        $pinjaman = Pinjaman::find($id);
 
-        if (!$this->selectedPinjaman) {
+        if (!$pinjaman) {
             Flux::toast(heading: 'Error', text: 'Data pengajuan tidak ditemukan.', variant: 'danger');
             return;
         }
@@ -200,27 +196,14 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
             'alasanPenolakan.required' => 'Alasan penolakan wajib diisi.'
         ]);
 
-        $this->selectedPinjaman->update([
-            'status' => 'ditolak',
-            'alasan_penolakan' => $this->alasanPenolakan,
-            'ditolak_oleh' => auth('web')->user()->id,
-            'ditolak_pada' => now(),
-        ]);
-
-        $user = User::with('userable')
-            ->where('userable_type', 'App\Models\Employee')
-            ->where('userable_id', $this->selectedPinjaman->employee_id)
-            ->first();
-
-        if ($user) {
-            Mail::to($user->email)->send(new NotifikasiPersetujuanPinjaman(
-                namaAnggota: $user->userable->nama_lengkap,
-                statusApprove: 'ditolak',
-                nomorPengajuan: $this->selectedPinjaman->nomor_pengajuan,
-                nominal: $this->selectedPinjaman->nominal_pengajuan,
-                alasanPenolakan: $this->alasanPenolakan
-            ));
-        }
+        DB::transaction(function () use ($pinjaman) {
+            $pinjaman->update([
+                'status'           => 'ditolak',
+                'alasan_penolakan' => $this->alasanPenolakan,
+                'ditolak_oleh'     => auth('web')->user()->id,
+                'ditolak_pada'     => now(),
+            ]);
+        });
 
         Flux::toast(
             heading: 'Pengajuan Ditolak',
@@ -231,6 +214,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
         Flux::modal('detail-pengajuan')->close();
         $this->selectedPinjaman = null;
         $this->alasanPenolakan = '';
+        unset($this->pengajuan);
     }
 };
 ?>
@@ -245,7 +229,6 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
     
     <flux:separator variant="subtle" />
 
-    <!-- Table Section -->
     <flux:card class="flex flex-col mt-6">
         <div class="flex flex-col gap-3 md:flex-row md:gap-0 justify-between items-center">
             <flux:heading size="lg" level="2">Daftar Pengajuan Pinjaman</flux:heading>
@@ -261,7 +244,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
                     <flux:table.column>No. Pengajuan</flux:table.column>
                     <flux:table.column>NPK & Nama Anggota</flux:table.column>
                     <flux:table.column>Program Pinjaman</flux:table.column>
-                    <flux:table.column>Nominal Diajukan</flux:table.column>
+                    <flux:table.column>Nominal</flux:table.column>
                     <flux:table.column>Tenor</flux:table.column>
                     <flux:table.column>Status</flux:table.column>
                     <flux:table.column>Aksi</flux:table.column>
@@ -270,8 +253,8 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
                 <flux:table.rows>
                     @forelse($this->pengajuan as $row)
                         <flux:table.row :key="$row->id">
-                            <flux:table.cell>{{ $row->diajukan_pada ? \Carbon\Carbon::parse($row->diajukan_pada)->format('d/m/Y') : '-' }}</flux:table.cell>
-                            <flux:table.cell class="font-semibold text-zinc-955 dark:text-white">{{ $row->nomor_pengajuan }}</flux:table.cell>
+                            <flux:table.cell>{{ $row->diajukan_pada ? \Carbon\Carbon::parse($row->diajukan_pada)->format('d/m/Y') : ($row->created_at ? $row->created_at->format('d/m/Y') : '-') }}</flux:table.cell>
+                            <flux:table.cell class="font-semibold text-zinc-800 dark:text-white text-xs">{{ $row->nomor_pengajuan }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-300">
@@ -285,30 +268,22 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
                             </flux:table.cell>
                             <flux:table.cell>
                                 @if($row->jenis_pinjaman === 'qard')
-                                    <flux:badge color="emerald" size="sm" icon="hand-raised">Qard Hasan</flux:badge>
+                                    <flux:badge color="emerald" size="sm">Qard Hasan</flux:badge>
                                 @else
-                                    <flux:badge color="amber" size="sm" icon="credit-card">Bon Sementara</flux:badge>
+                                    <flux:badge color="amber" size="sm">Bon Sementara</flux:badge>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell class="font-bold text-zinc-900 dark:text-zinc-100">Rp {{ number_format($row->nominal_pengajuan, 0, ',', '.') }}</flux:table.cell>
                             <flux:table.cell>{{ $row->tenor_bulan }} Bulan</flux:table.cell>
                             <flux:table.cell>
                                 @if($row->status === 'diajukan')
-                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Bendahara</flux:badge>
-                                @elseif($row->status === 'disetujui_bendahara')
-                                    <flux:badge color="sky" size="sm" icon="clock">Menunggu Ketua</flux:badge>
-                                @elseif($row->status === 'disetujui_ketua')
-                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Pencairan Dana</flux:badge>
-                                @elseif($row->status === 'dicairkan')
-                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu Aktivasi Cicilan</flux:badge>
-                                @else
-                                    <flux:badge color="zinc" size="sm">{{ $row->status }}</flux:badge>
+                                    <flux:badge color="orange" size="sm" icon="clock">Menunggu</flux:badge>
+                                @elseif($row->status === 'diproses')
+                                    <flux:badge color="sky" size="sm" icon="clock">Diproses</flux:badge>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                <div class="flex items-center gap-2">
-                                    <flux:button size="sm" variant="subtle" icon="eye" wire:click="detailPengajuan({{ $row->id }})">Detail</flux:button>
-                                </div>
+                                <flux:button size="sm" variant="subtle" icon="eye" wire:click="detailPengajuan({{ $row->id }})">Detail</flux:button>
                             </flux:table.cell>
                         </flux:table.row>
                     @empty
@@ -323,7 +298,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
 
     <!-- Modal Detail Pengajuan -->
     <flux:modal name="detail-pengajuan" class="md:w-xl max-h-[90vh] overflow-y-auto">
-        @if($selectedSelected = $selectedPinjaman)
+        @if($selectedPinjaman)
             <div>
                 <flux:heading size="lg">Detail Pengajuan Pinjaman</flux:heading>
                 <flux:text size="sm" class="mt-1">Tinjau informasi pengajuan pinjaman anggota.</flux:text>
@@ -332,103 +307,125 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Pinjaman'])] class exten
             <div class="mt-6 flex flex-col gap-6">
                 <!-- Info Anggota -->
                 <div class="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                    <div class="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                        {{ substr($selectedSelected->employee->nama_lengkap ?? 'A', 0, 1) }}
+                    <div class="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                        {{ substr($selectedPinjaman->employee->nama_lengkap ?? 'A', 0, 1) }}
                     </div>
                     <div>
-                        <flux:heading size="md">{{ $selectedSelected->employee->nama_lengkap ?? 'Unknown' }}</flux:heading>
-                        <flux:text class="text-sm text-zinc-500">NPK: {{ $selectedSelected->employee->npk ?? '-' }} • Seksi: {{ $selectedSelected->employee->seksi ?? '-' }}</flux:text>
+                        <flux:heading size="md">{{ $selectedPinjaman->employee->nama_lengkap ?? 'Unknown' }}</flux:heading>
+                        <flux:text class="text-sm text-zinc-500">NPK: {{ $selectedPinjaman->employee->npk ?? '-' }} • Seksi: {{ $selectedPinjaman->employee->seksi ?? '-' }}</flux:text>
                     </div>
                 </div>
 
-                <!-- Detail Pengajuan -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <flux:text class="text-sm font-medium text-zinc-400 mb-1">Nomor Pengajuan</flux:text>
-                        <flux:text class="font-semibold text-zinc-900 dark:text-white">{{ $selectedSelected->nomor_pengajuan }}</flux:text>
-                    </div>
-                    <div>
-                        <flux:text class="text-sm font-medium text-zinc-400 mb-1">Kategori Pinjaman</flux:text>
-                        <div>
-                            @if($selectedSelected->jenis_pinjaman === 'qard')
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                    Qard Hasan
-                                </span>
-                            @else
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                                    Bon Sementara
-                                </span>
-                            @endif
+                <!-- Status Stepper -->
+                <div class="flex items-center text-xs font-semibold">
+                    @php
+                        $steps = ['diajukan' => 'Diajukan', 'diproses' => 'Diproses', 'berjalan' => 'Berjalan', 'lunas' => 'Lunas'];
+                        $colors = ['diajukan' => 'bg-orange-500', 'diproses' => 'bg-sky-500', 'berjalan' => 'bg-emerald-500', 'lunas' => 'bg-green-600'];
+                        $statusOrder = array_keys($steps);
+                        $currentIdx = array_search($selectedPinjaman->status, $statusOrder);
+                    @endphp
+                    @foreach($steps as $key => $label)
+                        @php $idx = array_search($key, $statusOrder); @endphp
+                        <div class="flex flex-col items-center gap-1 flex-1">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold {{ $currentIdx !== false && $idx <= $currentIdx ? ($colors[$key] ?? 'bg-zinc-400') : 'bg-zinc-300 dark:bg-zinc-700' }}">
+                                {{ $idx + 1 }}
+                            </div>
+                            <span class="text-[10px] text-center {{ $currentIdx !== false && $idx <= $currentIdx ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-400' }}">{{ $label }}</span>
                         </div>
-                    </div>
-                    <div>
-                        <flux:text class="text-sm font-medium text-zinc-400 mb-1">Nominal Diajukan</flux:text>
-                        <flux:text class="text-lg font-bold text-zinc-900 dark:text-white">Rp {{ number_format($selectedSelected->nominal_pengajuan, 0, ',', '.') }}</flux:text>
-                    </div>
-                    <div>
-                        <flux:text class="text-sm font-medium text-zinc-400 mb-1">Tenor Angsuran</flux:text>
-                        <flux:text class="text-lg font-medium text-zinc-800 dark:text-zinc-200">{{ $selectedSelected->tenor_bulan }} Bulan</flux:text>
-                    </div>
-                    
-                    @if($selectedSelected->jenis_pinjaman === 'bon')
-                        <div class="col-span-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300">
-                            <strong>Penting:</strong> Pinjaman Bon Sementara akan dipotong penuh 100% pada siklus penggajian berikutnya.
-                        </div>
-                    @else
-                        <div class="col-span-2 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg border border-emerald-200 dark:border-emerald-900/40 text-xs text-emerald-800 dark:text-emerald-300">
-                            <strong>Perkiraan Angsuran per Bulan:</strong> Rp {{ number_format($selectedSelected->nominal_pengajuan / $selectedSelected->tenor_bulan, 0, ',', '.') }} /bulan.
-                        </div>
-                    @endif
+                        @if(!$loop->last)
+                            <div class="flex-1 h-0.5 {{ $currentIdx !== false && $idx < $currentIdx ? 'bg-emerald-400' : 'bg-zinc-200 dark:bg-zinc-700' }} mb-3"></div>
+                        @endif
+                    @endforeach
                 </div>
 
-                <!-- Info Rekening Pencairan -->
+                <!-- Detail -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <flux:text class="text-xs font-medium text-zinc-400 mb-1">Nomor Pengajuan</flux:text>
+                        <flux:text class="font-semibold text-zinc-900 dark:text-white text-sm">{{ $selectedPinjaman->nomor_pengajuan }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:text class="text-xs font-medium text-zinc-400 mb-1">Kategori Pinjaman</flux:text>
+                        @if($selectedPinjaman->jenis_pinjaman === 'qard')
+                            <span class="inline-flex px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Qard Hasan</span>
+                        @else
+                            <span class="inline-flex px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">Bon Sementara</span>
+                        @endif
+                    </div>
+                    <div>
+                        <flux:text class="text-xs font-medium text-zinc-400 mb-1">Nominal Diajukan</flux:text>
+                        <flux:text class="text-lg font-bold text-zinc-900 dark:text-white">Rp {{ number_format($selectedPinjaman->nominal_pengajuan, 0, ',', '.') }}</flux:text>
+                    </div>
+                    <div>
+                        <flux:text class="text-xs font-medium text-zinc-400 mb-1">Tenor Angsuran</flux:text>
+                        <flux:text class="text-lg font-medium text-zinc-800 dark:text-zinc-200">{{ $selectedPinjaman->tenor_bulan }} Bulan</flux:text>
+                    </div>
+                    <div class="col-span-2 p-3 rounded-lg border text-xs
+                        {{ $selectedPinjaman->jenis_pinjaman === 'bon'
+                            ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-300'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-300' }}">
+                        @if($selectedPinjaman->jenis_pinjaman === 'bon')
+                            <strong>Penting:</strong> Pinjaman Bon Sementara dipotong penuh pada siklus penggajian berikutnya.
+                        @else
+                            <strong>Estimasi Angsuran per Bulan:</strong>
+                            Rp {{ number_format($selectedPinjaman->nominal_pengajuan / max(1, $selectedPinjaman->tenor_bulan), 0, ',', '.') }} /bulan
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Rekening -->
                 <div class="p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                    <flux:heading size="sm" class="mb-3 text-zinc-700 dark:text-zinc-300">Rekening Pencairan Anggota</flux:heading>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <flux:heading size="sm" class="mb-3 text-zinc-700 dark:text-zinc-300">Rekening Pencairan</flux:heading>
+                    <div class="grid grid-cols-3 gap-4 text-sm">
                         <div>
-                            <span class="text-zinc-450 block text-xs">Nama Bank</span>
-                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedSelected->nama_bank }}</span>
+                            <span class="text-xs text-zinc-400 block">Nama Bank</span>
+                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedPinjaman->nama_bank }}</span>
                         </div>
                         <div>
-                            <span class="text-zinc-455 block text-xs">Nomor Rekening</span>
-                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedSelected->no_rekening }}</span>
+                            <span class="text-xs text-zinc-400 block">No. Rekening</span>
+                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedPinjaman->no_rekening }}</span>
                         </div>
                         <div>
-                            <span class="text-zinc-460 block text-xs">Nama Pemilik</span>
-                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedSelected->nama_pemilik_rekening }}</span>
+                            <span class="text-xs text-zinc-400 block">Atas Nama</span>
+                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedPinjaman->nama_pemilik_rekening }}</span>
                         </div>
                     </div>
                 </div>
+
+                @if($selectedPinjaman->catatan)
+                    <div class="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-100 text-sm text-blue-700 dark:text-blue-300">
+                        <strong>Catatan:</strong> {{ $selectedPinjaman->catatan }}
+                    </div>
+                @endif
 
                 <flux:separator variant="subtle" />
 
-                <!-- Action Form Penolakan / Persetujuan -->
+                <!-- Actions -->
                 <div class="space-y-4">
-                    <flux:field>
-                        <flux:label>Catatan / Alasan Penolakan (Wajib diisi jika menolak pengajuan)</flux:label>
-                        <flux:textarea wire:model="alasanPenolakan" placeholder="Tulis alasan penolakan di sini..." rows="2" />
-                        <flux:error name="alasanPenolakan" />
-                    </flux:field>
+                    @if(in_array($selectedPinjaman->status, ['diajukan', 'diproses']))
+                        <flux:field>
+                            <flux:label>Alasan Penolakan <span class="text-zinc-400 text-xs">(wajib diisi jika menolak)</span></flux:label>
+                            <flux:textarea wire:model="alasanPenolakan" placeholder="Tulis alasan penolakan di sini..." rows="2" />
+                            <flux:error name="alasanPenolakan" />
+                        </flux:field>
+                    @endif
 
                     <div class="flex justify-end gap-3 pt-2">
-                        <flux:button variant="danger" icon="x-mark" wire:click="tolak({{ $selectedSelected->id }})">Tolak Pengajuan</flux:button>
-                        
-                        @if($selectedSelected->status === 'diajukan')
-                            <flux:button variant="primary" icon="check" wire:click="approveBendahara({{ $selectedSelected->id }})">Setujui (Bendahara)</flux:button>
-                        @elseif($selectedSelected->status === 'disetujui_bendahara')
-                            <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="approveKetua({{ $selectedSelected->id }})">Setujui (Ketua)</flux:button>
-                        @elseif($selectedSelected->status === 'disetujui_ketua')
-                            <flux:button variant="primary" color="orange" icon="check-circle" wire:click="approveStaffKoperasi({{ $selectedSelected->id }})">Proses Pencairan Dana</flux:button>
-                        @elseif($selectedSelected->status === 'dicairkan')
-                            <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="aktivasiCicilan({{ $selectedSelected->id }})">Aktifkan Cicilan</flux:button>
+                        @if(in_array($selectedPinjaman->status, ['diajukan', 'diproses']))
+                            <flux:button variant="danger" icon="x-mark" wire:click="tolak({{ $selectedPinjaman->id }})">Tolak Pengajuan</flux:button>
+                        @endif
+
+                        @if($selectedPinjaman->status === 'diajukan')
+                            <flux:button variant="primary" color="sky" icon="check" wire:click="prosesPengajuan({{ $selectedPinjaman->id }})">Proses Pengajuan</flux:button>
+                            <flux:button variant="primary" color="emerald" icon="check-circle" wire:click="prosesDanAktifkan({{ $selectedPinjaman->id }})">Setujui & Aktifkan</flux:button>
+                        @elseif($selectedPinjaman->status === 'diproses')
+                            <flux:button variant="primary" color="emerald" icon="banknotes" wire:click="aktifkanCicilan({{ $selectedPinjaman->id }})">Dana Cair → Aktifkan Cicilan</flux:button>
                         @endif
                     </div>
                 </div>
             </div>
         @else
-            <div class="py-8 text-center text-zinc-500">
-                Memuat data pengajuan...
-            </div>
+            <div class="py-8 text-center text-zinc-500">Memuat data pengajuan...</div>
         @endif
     </flux:modal>
 </div>

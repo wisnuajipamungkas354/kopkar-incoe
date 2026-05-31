@@ -38,7 +38,7 @@ new #[Layout('layouts::admin')] class extends Component
     #[Validate('required|string|max:150')]
     public $nama_pemilik_rekening = '';
 
-    #[Validate('required|in:draft,diajukan,disetujui_bendahara,disetujui_ketua,ditolak,dicairkan,berjalan,lunas')]
+    #[Validate('required|in:draft,diajukan,diproses,ditolak,dibatalkan,berjalan,lunas')]
     public $status = 'draft';
 
     public $alasan_penolakan = '';
@@ -169,37 +169,24 @@ new #[Layout('layouts::admin')] class extends Component
                 $updateData['diajukan_pada'] = $now;
             }
 
-            if ($this->status === 'disetujui_bendahara') {
-                $updateData['disetujui_bendahara_oleh'] = $userId;
-                $updateData['disetujui_bendahara_pada'] = $now;
+            if (in_array($this->status, ['diproses', 'berjalan', 'lunas']) && $this->pinjaman->diproses_oleh === null) {
+                $updateData['diproses_oleh'] = $userId;
+                $updateData['diproses_pada'] = $now;
             }
 
-            if ($this->status === 'disetujui_ketua') {
-                if ($this->pinjaman->disetujui_bendahara_oleh === null) {
-                    $updateData['disetujui_bendahara_oleh'] = $userId;
-                    $updateData['disetujui_bendahara_pada'] = $now;
-                }
-                $updateData['disetujui_ketua_oleh'] = $userId;
-                $updateData['disetujui_ketua_pada'] = $now;
+            if (in_array($this->status, ['berjalan', 'lunas']) && $this->pinjaman->tanggal_pencairan === null) {
+                $updateData['tanggal_pencairan'] = now()->toDateString();
+            }
+
+            if ($this->status === 'dibatalkan' && $this->pinjaman->dibatalkan_oleh === null) {
+                $updateData['dibatalkan_oleh'] = $userId;
+                $updateData['dibatalkan_pada'] = $now;
             }
 
             if ($this->status === 'ditolak') {
-                $updateData['ditolak_oleh'] = $userId;
-                $updateData['ditolak_pada'] = $now;
+                $updateData['ditolak_oleh']     = $userId;
+                $updateData['ditolak_pada']     = $now;
                 $updateData['alasan_penolakan'] = $this->alasan_penolakan ?: null;
-            }
-
-            if (in_array($this->status, ['dicairkan', 'berjalan', 'lunas'])) {
-                if ($this->pinjaman->disetujui_bendahara_oleh === null) {
-                    $updateData['disetujui_bendahara_oleh'] = $userId;
-                    $updateData['disetujui_bendahara_pada'] = $now;
-                }
-                if ($this->pinjaman->disetujui_ketua_oleh === null) {
-                    $updateData['disetujui_ketua_oleh'] = $userId;
-                    $updateData['disetujui_ketua_pada'] = $now;
-                }
-                $updateData['diproses_oleh'] = $userId;
-                $updateData['diproses_pada'] = $now;
             }
         } else {
             if ($this->status === 'ditolak') {
@@ -238,16 +225,16 @@ new #[Layout('layouts::admin')] class extends Component
                         <span class="font-medium">{{ \Carbon\Carbon::parse($pinjaman->diajukan_pada)->format('d/m/Y H:i') }}</span>
                     </div>
                 @endif
-                @if($pinjaman->disetujui_bendahara_pada)
+                @if($pinjaman->diproses_pada)
                     <div class="flex justify-between">
-                        <span class="text-zinc-400">Disetujui Bendahara Pada:</span>
-                        <span class="font-medium">{{ \Carbon\Carbon::parse($pinjaman->disetujui_bendahara_pada)->format('d/m/Y H:i') }}</span>
+                        <span class="text-zinc-400">Diproses Pada:</span>
+                        <span class="font-medium">{{ \Carbon\Carbon::parse($pinjaman->diproses_pada)->format('d/m/Y H:i') }}</span>
                     </div>
                 @endif
-                @if($pinjaman->disetujui_ketua_pada)
+                @if($pinjaman->tanggal_pencairan)
                     <div class="flex justify-between">
-                        <span class="text-zinc-400">Disetujui Ketua Pada:</span>
-                        <span class="font-medium">{{ \Carbon\Carbon::parse($pinjaman->disetujui_ketua_pada)->format('d/m/Y H:i') }}</span>
+                        <span class="text-zinc-400">Tanggal Pencairan:</span>
+                        <span class="font-medium text-emerald-600 dark:text-emerald-400">{{ \Carbon\Carbon::parse($pinjaman->tanggal_pencairan)->format('d/m/Y') }}</span>
                     </div>
                 @endif
                 @if($pinjaman->ditolak_pada)
@@ -431,11 +418,10 @@ new #[Layout('layouts::admin')] class extends Component
                         <flux:label>Status Pinjaman</flux:label>
                         <flux:select wire:model.live="status">
                             <flux:select.option value="draft">Draft</flux:select.option>
-                            <flux:select.option value="diajukan">Diajukan (Menunggu Bendahara)</flux:select.option>
-                            <flux:select.option value="disetujui_bendahara">Disetujui Bendahara (Menunggu Ketua)</flux:select.option>
-                            <flux:select.option value="disetujui_ketua">Disetujui Ketua</flux:select.option>
+                            <flux:select.option value="diajukan">Diajukan</flux:select.option>
+                            <flux:select.option value="diproses">Diproses</flux:select.option>
                             <flux:select.option value="ditolak">Ditolak</flux:select.option>
-                            <flux:select.option value="dicairkan">Dicairkan</flux:select.option>
+                            <flux:select.option value="dibatalkan">Dibatalkan</flux:select.option>
                             <flux:select.option value="berjalan">Berjalan</flux:select.option>
                             <flux:select.option value="lunas">Lunas</flux:select.option>
                         </flux:select>

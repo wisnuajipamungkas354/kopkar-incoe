@@ -36,7 +36,7 @@ new #[Layout('layouts::admin')] class extends Component
     #[Validate('required|string|max:150')]
     public $nama_pemilik_rekening = '';
 
-    #[Validate('required|in:draft,diajukan,disetujui_bendahara,disetujui_ketua,ditolak,dicairkan,berjalan,lunas')]
+    #[Validate('required|in:draft,diajukan,diproses,ditolak,dibatalkan,berjalan,lunas')]
     public $status = 'draft';
 
     public $alasan_penolakan = '';
@@ -125,18 +125,18 @@ new #[Layout('layouts::admin')] class extends Component
         $nomAngsuran = $nomDisetujui / (int) $this->tenor_bulan;
 
         $data = [
-            'nomor_pengajuan' => $nomor_pengajuan,
-            'employee_id' => $this->employee_id,
-            'jenis_pinjaman' => $this->jenis_pinjaman,
-            'nominal_pengajuan' => $this->nominal_pengajuan,
-            'nominal_disetujui' => $nomDisetujui,
-            'tenor_bulan' => $this->tenor_bulan,
-            'nominal_angsuran' => $nomAngsuran,
-            'no_rekening' => $this->no_rekening,
-            'nama_bank' => $this->nama_bank,
+            'nomor_pengajuan'       => $nomor_pengajuan,
+            'employee_id'           => $this->employee_id,
+            'jenis_pinjaman'        => $this->jenis_pinjaman,
+            'nominal_pengajuan'     => $this->nominal_pengajuan,
+            'nominal_disetujui'     => $nomDisetujui,
+            'tenor_bulan'           => $this->tenor_bulan,
+            'nominal_angsuran'      => $nomAngsuran,
+            'no_rekening'           => $this->no_rekening,
+            'nama_bank'             => $this->nama_bank,
             'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
-            'status' => $this->status,
-            'catatan' => $this->catatan ?: null,
+            'status'                => $this->status,
+            'catatan'               => $this->catatan ?: null,
         ];
 
         // Audit logs
@@ -145,25 +145,24 @@ new #[Layout('layouts::admin')] class extends Component
             $data['diajukan_pada'] = $now;
         }
 
-        if (in_array($this->status, ['disetujui_bendahara', 'disetujui_ketua', 'dicairkan', 'berjalan', 'lunas'])) {
-            $data['disetujui_bendahara_oleh'] = $userId;
-            $data['disetujui_bendahara_pada'] = $now;
-        }
-
-        if (in_array($this->status, ['disetujui_ketua', 'dicairkan', 'berjalan', 'lunas'])) {
-            $data['disetujui_ketua_oleh'] = $userId;
-            $data['disetujui_ketua_pada'] = $now;
+        if (in_array($this->status, ['diproses', 'berjalan', 'lunas'])) {
+            $data['diproses_oleh'] = $userId;
+            $data['diproses_pada'] = $now;
         }
 
         if ($this->status === 'ditolak') {
-            $data['ditolak_oleh'] = $userId;
-            $data['ditolak_pada'] = $now;
+            $data['ditolak_oleh']     = $userId;
+            $data['ditolak_pada']     = $now;
             $data['alasan_penolakan'] = $this->alasan_penolakan ?: null;
         }
 
-        if (in_array($this->status, ['dicairkan', 'berjalan', 'lunas'])) {
-            $data['diproses_oleh'] = $userId;
-            $data['diproses_pada'] = $now;
+        if ($this->status === 'dibatalkan') {
+            $data['dibatalkan_oleh'] = $userId;
+            $data['dibatalkan_pada'] = $now;
+        }
+
+        if (in_array($this->status, ['berjalan', 'lunas'])) {
+            $data['tanggal_pencairan'] = now()->toDateString();
         }
 
         Pinjaman::create($data);
@@ -351,11 +350,10 @@ new #[Layout('layouts::admin')] class extends Component
                         <flux:label>Status Pinjaman</flux:label>
                         <flux:select wire:model.live="status">
                             <flux:select.option value="draft">Draft</flux:select.option>
-                            <flux:select.option value="diajukan">Diajukan (Menunggu Bendahara)</flux:select.option>
-                            <flux:select.option value="disetujui_bendahara">Disetujui Bendahara (Menunggu Ketua)</flux:select.option>
-                            <flux:select.option value="disetujui_ketua">Disetujui Ketua</flux:select.option>
+                            <flux:select.option value="diajukan">Diajukan</flux:select.option>
+                            <flux:select.option value="diproses">Diproses</flux:select.option>
                             <flux:select.option value="ditolak">Ditolak</flux:select.option>
-                            <flux:select.option value="dicairkan">Dicairkan</flux:select.option>
+                            <flux:select.option value="dibatalkan">Dibatalkan</flux:select.option>
                             <flux:select.option value="berjalan">Berjalan</flux:select.option>
                             <flux:select.option value="lunas">Lunas</flux:select.option>
                         </flux:select>
