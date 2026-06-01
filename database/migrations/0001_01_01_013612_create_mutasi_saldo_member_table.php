@@ -37,19 +37,13 @@ return new class extends Migration
                 'migrasi_saldo',
             ]);
 
-            $table->unsignedBigInteger('referensi_id')
-                ->nullable();
+            $table->unsignedBigInteger('referensi_id')->nullable();
             $table->decimal('nominal', 15, 2);
             $table->decimal('saldo_sebelum', 15, 2);
             $table->decimal('saldo_sesudah', 15, 2);
-            $table->text('keterangan')
-                ->nullable();
+            $table->text('keterangan')->nullable();
 
-            $table->foreignId('diproses_oleh')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
+            $table->string('diproses_oleh')->nullable();
             $table->timestamps();
 
             $table->index([

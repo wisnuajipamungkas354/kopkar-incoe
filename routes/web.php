@@ -50,11 +50,14 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('persetujuan/simpanan-sukarela', 'pages::admin.persetujuan.simpanan-sukarela.index');
         Route::livewire('persetujuan/penarikan-saldo', 'pages::admin.persetujuan.penarikan-saldo.index');
         Route::livewire('persetujuan/lazis', 'pages::admin.persetujuan.lazis.index');
-        Route::livewire('persetujuan/pembiayaan', 'pages::admin.persetujuan.pembiayaan.index');
         Route::livewire('persetujuan/pinjaman', 'pages::admin.persetujuan.pinjaman.index');
+        Route::livewire('persetujuan/pembiayaan', 'pages::admin.persetujuan.pembiayaan.index');
         Route::livewire('pinjaman', 'pages::admin.pinjaman.index');
         Route::livewire('pinjaman/create', 'pages::admin.pinjaman.create');
         Route::livewire('pinjaman/{id}/edit', 'pages::admin.pinjaman.edit');
+        Route::livewire('pembiayaan', 'pages::admin.pembiayaan.index');
+        Route::livewire('pembiayaan/create', 'pages::admin.pembiayaan.create');
+        Route::livewire('pembiayaan/{id}/edit', 'pages::admin.pembiayaan.edit');
         Route::livewire('mutasi-kas', 'pages::admin.mutasi-kas.index');
         Route::livewire('potongan-payroll', 'pages::admin.potongan-payroll.index');
     });

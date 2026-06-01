@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\KoperasiMember;
 use App\Models\Pembiayaan;
 use App\Models\Pinjaman;
 use App\Models\MutasiSaldoMember;
@@ -27,15 +28,13 @@ new #[Layout('layouts::anggota')] class extends Component
         $user = auth('web')->user();
         if (!$user || !$user->userable) return;
         $this->employeeId = $user->userable->id;
+        $member = KoperasiMember::find($this->employeeId);
 
-        $pick = fn($jenis) => MutasiSaldoMember::where('employee_id', $this->employeeId)
-            ->where('jenis_saldo', $jenis)->latest('id')->value('saldo_sesudah') ?? 10000000;
-
-        $this->saldoPokok    = $pick('simpanan_pokok');
-        $this->saldoWajib    = $pick('simpanan_wajib');
-        $this->saldoSukarela = $pick('simpanan_sukarela');
-        $this->saldoLain     = $pick('simpanan_lain_lain');
-        $this->saldoShu      = $pick('shu');
+        $this->saldoPokok    = $member->saldo_simpanan_pokok;
+        $this->saldoWajib    = $member->saldo_simpanan_wajib;
+        $this->saldoSukarela = $member->saldo_simpanan_sukarela;
+        $this->saldoLain     = $member->saldo_simpanan_lain_lain;
+        $this->saldoShu      = $member->saldo_shu;
         $this->totalSimpanan = $this->saldoPokok + $this->saldoWajib + $this->saldoSukarela + $this->saldoLain + $this->saldoShu;
 
         $pembiayaanList = Pembiayaan::byEmployee()

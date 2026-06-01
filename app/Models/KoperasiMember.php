@@ -23,6 +23,12 @@ class KoperasiMember extends Model
         'nama_ahli_waris',
         'hubungan_ahli_waris',
         'hubungan_lainnya',
+
+        'saldo_simpanan_pokok',
+        'saldo_simpanan_wajib',
+        'saldo_simpanan_sukarela',
+        'saldo_simpanan_lain_lain',
+        'saldo_shu',
     ];
 
     protected function casts(): array

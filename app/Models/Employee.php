@@ -78,4 +78,38 @@ class Employee extends Model
     {
         return $this->hasMany(MutasiSaldoMember::class);
     }
+
+    public function getSisaTagihanAttribute()
+    {
+        $pinjamanBerjalan = \App\Models\Pinjaman::where('employee_id', $this->id)->where('status', 'berjalan')->get();
+        $totalPinjaman = $pinjamanBerjalan->sum('nominal_disetujui');
+        $pinjamanLunas = \App\Models\TagihanPayrollEmployee::where('employee_id', $this->id)
+            ->where('jenis_tagihan', 'pinjaman')
+            ->where('status', 'lunas')
+            ->whereIn('tagihanable_id', $pinjamanBerjalan->pluck('id'))
+            ->sum('nominal');
+        $sisaPinjaman = $totalPinjaman - $pinjamanLunas;
+
+        $pembiayaanBerjalan = \App\Models\Pembiayaan::where('employee_id', $this->id)->where('status', 'berjalan')->get();
+        $totalPembiayaan = $pembiayaanBerjalan->sum('total_pembiayaan');
+        $pembiayaanLunas = \App\Models\TagihanPayrollEmployee::where('employee_id', $this->id)
+            ->where('jenis_tagihan', 'pembiayaan')
+            ->where('status', 'lunas')
+            ->whereIn('tagihanable_id', $pembiayaanBerjalan->pluck('id'))
+            ->sum('nominal');
+        $sisaPembiayaan = $totalPembiayaan - $pembiayaanLunas;
+
+        return $sisaPinjaman + $sisaPembiayaan;
+    }
+
+    public function getPlafonAttribute()
+    {
+        $isAstra = $this->koperasiMember && !is_null($this->koperasiMember->join_koperasi_astra);
+        return $isAstra ? 25000000 : 35000000;
+    }
+
+    public function getSisaPlafonAttribute()
+    {
+        return $this->plafon - $this->sisa_tagihan;
+    }
 }

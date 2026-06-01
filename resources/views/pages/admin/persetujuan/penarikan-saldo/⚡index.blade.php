@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\KoperasiMember;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
@@ -58,7 +59,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Penarikan Saldo'])] clas
         DB::transaction(function () use ($penarikan) {
             $penarikan->update([
                 'status'        => 'diproses',
-                'diproses_oleh' => auth('web')->user()->id,
+                'diproses_oleh' => auth('web')->user()->userable->npk,
                 'diproses_pada' => now(),
             ]);
         });
@@ -81,20 +82,22 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Penarikan Saldo'])] clas
     public function selesaikanPenarikan($id)
     {
         $penarikan = PenarikanSaldo::with(['detailPenarikanSaldo'])->find($id);
+        $member = KoperasiMember::where('employee_id', $penarikan->employee_id)->first();
 
         if (!$penarikan || $penarikan->status !== 'diproses') {
             Flux::toast(heading: 'Error', text: 'Data tidak ditemukan atau status tidak valid.', variant: 'danger');
             return;
         }
 
-        DB::transaction(function () use ($penarikan) {
+        DB::transaction(function () use ($penarikan, $member) {
             foreach ($penarikan->detailPenarikanSaldo as $detail) {
                 $jenisSaldo = $detail->sumber_saldo;
+                $namaJenisSaldo = 'saldo_' . $jenisSaldo;
 
                 $saldoTerakhir = MutasiSaldoMember::where('employee_id', $penarikan->employee_id)
                     ->where('jenis_saldo', $jenisSaldo)
                     ->latest('id')
-                    ->value('saldo_sesudah') ?? 0;
+                    ->value('saldo_sesudah') ?? $member[$namaJenisSaldo];
 
                 MutasiSaldoMember::create([
                     'employee_id'      => $penarikan->employee_id,
@@ -108,63 +111,9 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Penarikan Saldo'])] clas
                     'keterangan'       => 'Penarikan Saldo — ' . $penarikan->nomor_pengajuan,
                     'diproses_oleh'    => auth('web')->user()->id,
                 ]);
-            }
 
-            $penarikan->update([
-                'status'            => 'selesai',
-                'tanggal_pencairan' => now()->toDateString(),
-            ]);
-        });
-
-        Flux::toast(
-            heading: 'Penarikan Selesai',
-            text: 'Dana berhasil ditransfer dan saldo anggota telah disesuaikan.',
-            variant: 'success',
-        );
-
-        Flux::modal('detail-pengajuan')->close();
-        $this->selectedPengajuan = null;
-        unset($this->pengajuan);
-    }
-
-    /**
-     * Langsung selesaikan dari diajukan (diajukan → selesai)
-     */
-    public function prosesDanSelesaikan($id)
-    {
-        $penarikan = PenarikanSaldo::with(['detailPenarikanSaldo'])->find($id);
-
-        if (!$penarikan || $penarikan->status !== 'diajukan') {
-            Flux::toast(heading: 'Error', text: 'Data tidak ditemukan atau status tidak valid.', variant: 'danger');
-            return;
-        }
-
-        DB::transaction(function () use ($penarikan) {
-            $penarikan->update([
-                'status'        => 'diproses',
-                'diproses_oleh' => auth('web')->user()->id,
-                'diproses_pada' => now(),
-            ]);
-
-            foreach ($penarikan->detailPenarikanSaldo as $detail) {
-                $jenisSaldo = $detail->sumber_saldo;
-
-                $saldoTerakhir = MutasiSaldoMember::where('employee_id', $penarikan->employee_id)
-                    ->where('jenis_saldo', $jenisSaldo)
-                    ->latest('id')
-                    ->value('saldo_sesudah') ?? 0;
-
-                MutasiSaldoMember::create([
-                    'employee_id'      => $penarikan->employee_id,
-                    'jenis_saldo'      => $jenisSaldo,
-                    'jenis_mutasi'     => 'debit',
-                    'nominal'          => $detail->nominal,
-                    'saldo_sebelum'    => $saldoTerakhir,
-                    'saldo_sesudah'    => max(0, $saldoTerakhir - $detail->nominal),
-                    'sumber_transaksi' => 'penarikan_saldo',
-                    'referensi_id'     => $penarikan->id,
-                    'keterangan'       => 'Penarikan Saldo — ' . $penarikan->nomor_pengajuan,
-                    'diproses_oleh'    => auth('web')->user()->id,
+                $member->update([
+                    $namaJenisSaldo => $saldoTerakhir - $detail->nominal,
                 ]);
             }
 
@@ -204,7 +153,7 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Penarikan Saldo'])] clas
             $penarikan->update([
                 'status'           => 'ditolak',
                 'alasan_penolakan' => $this->alasanPenolakan,
-                'ditolak_oleh'     => auth('web')->user()->id,
+                'ditolak_oleh'     => auth('web')->user()->userable->npk,
                 'ditolak_pada'     => now(),
             ]);
         });
@@ -387,7 +336,6 @@ new #[Layout('layouts::admin', ['title' => 'Persetujuan Penarikan Saldo'])] clas
 
                     @if($selectedPengajuan->status === 'diajukan')
                         <flux:button variant="primary" color="sky" icon="check" wire:click="prosesPenarikan({{ $selectedPengajuan->id }})">Proses Penarikan</flux:button>
-                        <flux:button variant="primary" color="emerald" icon="banknotes" wire:click="prosesDanSelesaikan({{ $selectedPengajuan->id }})">Transfer & Selesaikan</flux:button>
                     @elseif($selectedPengajuan->status === 'diproses')
                         <flux:button variant="primary" color="emerald" icon="banknotes" wire:click="selesaikanPenarikan({{ $selectedPengajuan->id }})">Transfer & Selesaikan</flux:button>
                     @endif

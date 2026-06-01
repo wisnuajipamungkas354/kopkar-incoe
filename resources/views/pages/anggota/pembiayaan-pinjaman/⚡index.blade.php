@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Employee;
 use App\Models\Pembiayaan;
 use App\Models\Pinjaman;
 use App\Models\TagihanPayrollEmployee;
@@ -20,7 +21,7 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
     public $employeeId;
 
     // Summary stats
-    public $totalPlafond = 0;
+    public $totalPlafon = 0;
     public $sisaTagihan  = 0;
     public $jumlahAktif  = 0;
     public $jumlahPengajuan = 0;
@@ -44,10 +45,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
             ->with('tagihanPayrollEmployee')->get();
 
         $this->jumlahAktif = $pembiayaanAktif->count() + $pinjamanAktif->count();
-
-        $this->totalPlafond =
-            $pembiayaanAktif->sum(fn($i) => $i->nominal_disetujui ?: $i->nominal_pengajuan) +
-            $pinjamanAktif->sum(fn($i) => $i->nominal_disetujui ?: $i->nominal_pengajuan);
+        $selectedEmployee = Employee::with('koperasiMember')->find($this->employeeId);
+        $this->totalPlafon = $selectedEmployee->sisa_plafon;
 
         $sisa = 0;
         foreach ([...$pembiayaanAktif, ...$pinjamanAktif] as $p) {
@@ -212,9 +211,9 @@ new #[Layout('layouts::anggota', ['title' => 'Pembiayaan dan Pinjaman'])] class 
                         <span class="text-sm font-medium opacity-75">Pembiayaan & Pinjaman</span>
                     </div>
                     <div class="text-2xl sm:text-3xl font-bold tracking-tight">
-                        Rp {{ number_format($totalPlafond, 0, ',', '.') }}
+                        Rp {{ number_format($totalPlafon, 0, ',', '.') }}
                     </div>
-                    <div class="text-xs opacity-60 mt-0.5">Sisa Plafond Aktif</div>
+                    <div class="text-xs opacity-60 mt-0.5">Sisa Plafon</div>
                 </div>
                 <a href="/anggota/pembiayaan-pinjaman/pengajuan" wire:navigate
                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold transition-all self-start">

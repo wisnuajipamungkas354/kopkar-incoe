@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\KoperasiMember;
 use App\Models\MutasiSaldoMember;
 use App\Models\NamaBank;
 use App\Models\PenarikanSaldo;
@@ -22,7 +23,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 
     public $activeTab = 'mutasi'; // mutasi | pengajuan_setoran | pengajuan_tarik
     public $employeeId;
-    public $userId;
+    public $npkUser;
     public $search = '';
 
     // Balances
@@ -58,19 +59,18 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
     public function mount()
     {
         $user = auth('web')->user();
-        $this->userId     = $user->id;
+        $this->npkUser = $user->userable->npk;
         $this->employeeId = $user->userable->id;
         $this->refreshBalances();
     }
 
     public function refreshBalances()
     {
-        $pick = fn($jenis) => MutasiSaldoMember::where('employee_id', $this->employeeId)
-            ->where('jenis_saldo', $jenis)->latest('id')->value('saldo_sesudah') ?? 500000;
+        $member = KoperasiMember::find($this->employeeId);
 
-        $this->saldoSukarela = $pick('simpanan_sukarela');
-        $this->saldoLain     = $pick('simpanan_lain_lain');
-        $this->saldoShu      = $pick('shu');
+        $this->saldoSukarela = $member->saldo_simpanan_sukarela;
+        $this->saldoLain     = $member->saldo_simpanan_lain_lain;
+        $this->saldoShu      = $member->saldo_shu;
 
         $this->nominalSaatIni = PotonganPayrollEmployee::where('jenis_potongan', 'simpanan_sukarela')
             ->where('employee_id', $this->employeeId)
@@ -177,7 +177,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
             'nominal_baru'      => (int) $this->nominalBaru,
             'status'            => 'pending',
             'tanggal_berlaku'   => Carbon::now()->addMonths(1)->firstOfMonth()->format('Y-m-d'),
-            'diajukan_oleh'     => $this->userId,
+            'diajukan_oleh'     => $this->npkUser,
             'tanggal_pengajuan' => Carbon::now()->format('Y-m-d'),
         ]);
 
@@ -254,7 +254,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
                 'nama_bank'             => $this->namaBank,
                 'nama_pemilik_rekening' => $this->namaPemilik,
                 'status'                => 'diajukan',
-                'diajukan_oleh'         => $this->userId,
+                'diajukan_oleh'         => $this->npkUser,
                 'diajukan_pada'         => Carbon::now(),
                 'catatan'               => $this->keteranganTarik,
             ]);

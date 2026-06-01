@@ -2,67 +2,46 @@
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
 use Livewire\Attributes\Computed;
 use App\Models\Employee;
 use App\Models\Pinjaman;
 use App\Models\NamaBank;
+use Illuminate\Support\Facades\DB;
 
-new #[Layout('layouts::admin')] class extends Component
+new #[Layout('layouts::admin', ['title' => 'Tambah Pinjaman'])] class extends Component
 {
-    // Search Karyawan
-    public $employee_id = '';
-    public $employeeSearch = '';
+    // ── Pilih Karyawan ──
+    public $employee_id      = '';
+    public $employeeSearch   = '';
     public $selectedEmployee = null;
 
-    // Form fields
-    #[Validate('required|in:qard,bon')]
-    public $jenis_pinjaman = 'qard';
-
-    #[Validate('required|numeric|min:1')]
-    public $nominal_pengajuan = '';
-
-    public $nominal_disetujui = '';
-
-    #[Validate('required|integer|min:1')]
-    public $tenor_bulan = 12;
-
-    #[Validate('required|string|max:100')]
-    public $nama_bank = '';
-
-    #[Validate('required|string|max:50')]
-    public $no_rekening = '';
-
-    #[Validate('required|string|max:150')]
-    public $nama_pemilik_rekening = '';
-
-    #[Validate('required|in:draft,diajukan,diproses,ditolak,dibatalkan,berjalan,lunas')]
-    public $status = 'draft';
-
-    public $alasan_penolakan = '';
-    public $catatan = '';
+    // ── PINJAMAN FIELDS ──
+    public $jenis_pinjaman          = 'qard';
+    public $nominal_pengajuan_p     = '';
+    public $nominal_disetujui_p     = '';
+    public $tenor_bulan_p           = 12;
+    public $nama_bank_p             = '';
+    public $no_rekening_p           = '';
+    public $nama_pemilik_rekening_p = '';
+    public $status_p                = 'diajukan';
+    public $alasan_penolakan_p      = '';
+    public $catatan_p               = '';
 
     public function updatedJenisPinjaman($value)
     {
-        if ($value === 'bon') {
-            $this->tenor_bulan = 1;
-        } else {
-            $this->tenor_bulan = 12;
-        }
+        $this->tenor_bulan_p = $value === 'bon' ? 1 : 12;
     }
 
     #[Computed]
     public function availableEmployees()
     {
         $query = Employee::query();
-
         if ($this->employeeSearch && !str_contains($this->employeeSearch, ' - ')) {
             $query->where(function ($q) {
                 $q->where('npk', 'like', '%' . $this->employeeSearch . '%')
                   ->orWhere('nama_lengkap', 'like', '%' . $this->employeeSearch . '%');
             });
         }
-
         return $query->orderBy('nama_lengkap', 'asc')->take(50)->get();
     }
 
@@ -70,322 +49,278 @@ new #[Layout('layouts::admin')] class extends Component
     public function bankList()
     {
         $banks = NamaBank::orderBy('nama_bank', 'asc')->pluck('nama_bank')->toArray();
-        if (empty($banks)) {
-            return ['BCA', 'BRI', 'BNI', 'BSI', 'BJB', 'BTN', 'Mandiri', 'Bank DKI', 'Bank Muamalat', 'Seabank', 'Permata'];
-        }
-        return $banks;
+        return empty($banks)
+            ? ['BCA', 'BRI', 'BNI', 'BSI', 'BJB', 'BTN', 'Mandiri', 'Bank DKI', 'Bank Muamalat', 'Seabank', 'Permata']
+            : $banks;
     }
 
     public function selectEmployee($id, $label)
     {
-        $this->employee_id = $id;
-        $this->employeeSearch = $label;
+        $this->employee_id      = $id;
+        $this->employeeSearch   = $label;
         $this->selectedEmployee = Employee::with('koperasiMember')->find($id);
 
         if ($this->selectedEmployee) {
-            $this->nama_pemilik_rekening = $this->selectedEmployee->nama_lengkap;
-            
             if ($this->selectedEmployee->nama_bank) {
-                $this->nama_bank = $this->selectedEmployee->nama_bank;
-                $this->no_rekening = $this->selectedEmployee->no_rekening;
-                $this->nama_pemilik_rekening = $this->selectedEmployee->nama_pemilik_rekening;
-                $this->js("Flux.toast({ text: 'Data rekening bank otomatis terisi dari profil anggota Koperasi.', variant: 'success' })");
+                $this->nama_bank_p             = $this->selectedEmployee->nama_bank;
+                $this->no_rekening_p           = $this->selectedEmployee->no_rekening;
+                $this->nama_pemilik_rekening_p = $this->selectedEmployee->nama_pemilik_rekening;
+                $this->js("Flux.toast({ text: 'Data rekening terisi otomatis dari profil.', variant: 'success' })");
             } else {
-                $this->nama_bank = '';
-                $this->no_rekening = '';
+                $this->nama_pemilik_rekening_p  = $this->selectedEmployee->nama_lengkap;
             }
         }
     }
 
-    public function save()
+    public function simpanPinjaman()
     {
         $this->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'alasan_penolakan' => 'required_if:status,ditolak',
+            'employee_id'             => 'required|exists:employees,id',
+            'jenis_pinjaman'          => 'required|in:qard,bon',
+            'nominal_pengajuan_p'     => 'required|numeric|min:1',
+            'tenor_bulan_p'           => 'required|integer|min:1|max:120',
+            'nama_bank_p'             => 'required|string|max:100',
+            'no_rekening_p'           => 'required|string|max:50',
+            'nama_pemilik_rekening_p' => 'required|string|max:150',
+            'status_p'                => 'required|in:diajukan,diproses,ditolak,dibatalkan,berjalan,lunas',
+            'alasan_penolakan_p'      => 'required_if:status_p,ditolak',
         ], [
-            'employee_id.required' => 'Pilih karyawan terlebih dahulu.',
-            'alasan_penolakan.required_if' => 'Alasan penolakan wajib diisi jika status Ditolak.',
+            'employee_id.required'            => 'Pilih karyawan terlebih dahulu.',
+            'alasan_penolakan_p.required_if'  => 'Alasan penolakan wajib diisi jika status Ditolak.',
         ]);
 
-        $this->validate();
-
-        if ($this->jenis_pinjaman === 'bon' && $this->tenor_bulan != 1) {
-            $this->addError('tenor_bulan', 'Tenor Bon Sementara harus 1 bulan.');
+        if ($this->jenis_pinjaman === 'bon' && $this->tenor_bulan_p != 1) {
+            $this->addError('tenor_bulan_p', 'Tenor Bon Sementara harus 1 bulan.');
             return;
         }
 
-        $nomor_pengajuan = 'PJ-' . date('YmdHis') . '-' . rand(1000, 9999);
-        $userId = auth('web')->user()->id;
-        $now = now();
+        $nomDisetujui = $this->nominal_disetujui_p !== '' ? (float)$this->nominal_disetujui_p : (float)$this->nominal_pengajuan_p;
+        $nomAngsuran  = $nomDisetujui / (int)$this->tenor_bulan_p;
 
-        $nomDisetujui = $this->nominal_disetujui !== '' && $this->nominal_disetujui !== null 
-            ? (float) $this->nominal_disetujui 
-            : (float) $this->nominal_pengajuan;
+        DB::transaction(function () use ($nomDisetujui, $nomAngsuran) {
+            $pinjaman = Pinjaman::create([
+                'nomor_pengajuan'       => 'PJ-'.date('YmdHis').'-'.rand(1000,9999),
+                'employee_id'           => $this->employee_id,
+                'jenis_pinjaman'        => $this->jenis_pinjaman,
+                'nominal_pengajuan'     => $this->nominal_pengajuan_p,
+                'nominal_disetujui'     => $nomDisetujui,
+                'tenor_bulan'           => $this->tenor_bulan_p,
+                'nominal_angsuran'      => $nomAngsuran,
+                'no_rekening'           => $this->no_rekening_p,
+                'nama_bank'             => $this->nama_bank_p,
+                'nama_pemilik_rekening' => $this->nama_pemilik_rekening_p,
+                'status'                => $this->status_p,
+                'alasan_penolakan'      => $this->status_p === 'ditolak' ? $this->alasan_penolakan_p : null,
+                'catatan'               => $this->catatan_p ?: null,
+                'diajukan_oleh'         => auth('web')->user()->id,
+                'diajukan_pada'         => now(),
+            ]);
 
-        $nomAngsuran = $nomDisetujui / (int) $this->tenor_bulan;
+            if ($this->status_p === 'berjalan') {
+                $pinjaman->update([
+                    'diproses_oleh'     => auth('web')->user()->id,
+                    'diproses_pada'     => now(),
+                    'tanggal_pencairan' => now()->toDateString(),
+                ]);
+            } elseif ($this->status_p === 'diproses') {
+                $pinjaman->update([
+                    'diproses_oleh' => auth('web')->user()->id,
+                    'diproses_pada' => now(),
+                ]);
+            } elseif ($this->status_p === 'ditolak') {
+                $pinjaman->update([
+                    'ditolak_oleh' => auth('web')->user()->id,
+                    'ditolak_pada' => now(),
+                ]);
+            }
+        });
 
-        $data = [
-            'nomor_pengajuan'       => $nomor_pengajuan,
-            'employee_id'           => $this->employee_id,
-            'jenis_pinjaman'        => $this->jenis_pinjaman,
-            'nominal_pengajuan'     => $this->nominal_pengajuan,
-            'nominal_disetujui'     => $nomDisetujui,
-            'tenor_bulan'           => $this->tenor_bulan,
-            'nominal_angsuran'      => $nomAngsuran,
-            'no_rekening'           => $this->no_rekening,
-            'nama_bank'             => $this->nama_bank,
-            'nama_pemilik_rekening' => $this->nama_pemilik_rekening,
-            'status'                => $this->status,
-            'catatan'               => $this->catatan ?: null,
-        ];
-
-        // Audit logs
-        if ($this->status !== 'draft') {
-            $data['diajukan_oleh'] = $userId;
-            $data['diajukan_pada'] = $now;
-        }
-
-        if (in_array($this->status, ['diproses', 'berjalan', 'lunas'])) {
-            $data['diproses_oleh'] = $userId;
-            $data['diproses_pada'] = $now;
-        }
-
-        if ($this->status === 'ditolak') {
-            $data['ditolak_oleh']     = $userId;
-            $data['ditolak_pada']     = $now;
-            $data['alasan_penolakan'] = $this->alasan_penolakan ?: null;
-        }
-
-        if ($this->status === 'dibatalkan') {
-            $data['dibatalkan_oleh'] = $userId;
-            $data['dibatalkan_pada'] = $now;
-        }
-
-        if (in_array($this->status, ['berjalan', 'lunas'])) {
-            $data['tanggal_pencairan'] = now()->toDateString();
-        }
-
-        Pinjaman::create($data);
-
-        $this->js("Flux.toast({ text: 'Data pinjaman baru berhasil ditambahkan.', variant: 'success' })");
-
-        return $this->redirect('/admin/pinjaman', navigate: true);
+        $this->js("Flux.toast({ heading: 'Berhasil', text: 'Data pinjaman baru ditambahkan.', variant: 'success' })");
+        return redirect()->to('/admin/pinjaman');
     }
 };
 ?>
 
 <div>
     <div class="flex items-center gap-4 mb-6">
-        <flux:button href="/admin/pinjaman" wire:navigate variant="ghost" icon="arrow-left" class="!px-2" />
+        <flux:button variant="subtle" icon="arrow-left" href="/admin/pinjaman" wire:navigate>Kembali</flux:button>
         <div>
-            <flux:heading size="xl" level="1">Tambah Pinjaman Baru</flux:heading>
-            <flux:text class="mt-2 text-base text-zinc-500">Masukkan detail data pengajuan pinjaman karyawan di bawah ini.</flux:text>
+            <flux:heading size="xl" level="1">Tambah Pinjaman</flux:heading>
+            <flux:text class="mt-1 text-base text-zinc-500">Isi form di bawah untuk membuat data pinjaman anggota.</flux:text>
         </div>
     </div>
-    
-    <flux:separator variant="subtle" />
 
-    <flux:card class="mt-6">
-        <form wire:submit="save" class="space-y-6">
-            
-            <!-- SECTION 1: PILIH KARYAWAN -->
-            <div class="border-b border-zinc-200 dark:border-zinc-700 pb-6">
-                <flux:heading size="lg" class="mb-4 text-zinc-900 dark:text-white">1. Pilih Karyawan</flux:heading>
-                
-                <div x-data="{ open: false }" class="relative max-w-xl">
+    <flux:separator variant="subtle" class="mb-6" />
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {{-- Kiri: Cari Karyawan --}}
+        <div class="md:col-span-1">
+            <flux:card>
+                <flux:heading size="lg" class="mb-4">Pilih Karyawan</flux:heading>
+                <div x-data="{ open: false }" class="relative">
                     <flux:field>
-                        <flux:label>Cari Karyawan (Ketik NPK atau Nama)</flux:label>
+                        <flux:label>Cari NPK atau Nama</flux:label>
                         <flux:input 
                             type="text" 
-                            placeholder="Ketik NPK atau Nama Karyawan..." 
-                            wire:model.live="employeeSearch"
+                            placeholder="Ketik NPK atau Nama..." 
+                            wire:model.live.debounce.300ms="employeeSearch"
                             x-on:focus="open = true"
                             x-on:click="open = true"
-                            x-on:keydown.enter.prevent=""
+                            x-on:keydown.escape="open = false"
                             icon="magnifying-glass"
                         />
                         
-                        <div 
-                            x-show="open" 
-                            x-on:click.outside="open = false"
-                            class="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-60 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-700"
-                            style="display: none;"
-                            x-transition
-                        >
+                        <div x-show="open" x-on:click.outside="open = false" 
+                             class="absolute z-50 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                             style="display:none;">
                             @forelse($this->availableEmployees as $emp)
-                                <div 
-                                    x-on:click="open = false; $wire.selectEmployee({{ $emp->id }}, '{{ $emp->npk }} - {{ $emp->nama_lengkap }}')"
-                                    class="px-4 py-2.5 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer text-sm text-zinc-900 dark:text-zinc-100 flex justify-between"
-                                >
-                                    <span class="font-medium">{{ $emp->nama_lengkap }}</span>
-                                    <span class="font-mono text-zinc-400 text-xs">{{ $emp->npk }}</span>
+                                <div x-on:click="open = false; $wire.selectEmployee({{ $emp->id }}, '{{ $emp->npk }} - {{ $emp->nama_lengkap }}')"
+                                     class="px-4 py-3 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer text-sm border-b border-zinc-50 dark:border-zinc-700/50 last:border-0 flex justify-between items-center">
+                                    <div>
+                                        <span class="font-medium block">{{ $emp->nama_lengkap }}</span>
+                                        <span class="text-xs text-zinc-400">{{ $emp->npk }} • {{ $emp->seksi ?? '-' }}</span>
+                                    </div>
+                                    @if($emp->koperasiMember)
+                                        <span class="w-2 h-2 rounded-full bg-green-500" title="Anggota Koperasi"></span>
+                                    @endif
                                 </div>
                             @empty
-                                <div class="px-4 py-2.5 text-sm text-zinc-500">Karyawan tidak ditemukan.</div>
+                                <div class="px-4 py-3 text-sm text-zinc-500 text-center">Karyawan tidak ditemukan.</div>
                             @endforelse
                         </div>
-                        
                         <flux:error name="employee_id" />
                     </flux:field>
                 </div>
 
                 @if($selectedEmployee)
-                    <!-- Employee Preview Card -->
-                    <div class="mt-4 p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-zinc-50/50 dark:bg-zinc-800/30 max-w-2xl grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span class="text-zinc-400 block text-xs">NPK</span>
-                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedEmployee->npk }}</span>
+                    <div class="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800 flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-emerald-200 dark:bg-emerald-800 flex items-center justify-center text-xl font-bold text-emerald-700 dark:text-emerald-300 shrink-0">
+                            {{ substr($selectedEmployee->nama_lengkap, 0, 1) }}
                         </div>
-                        <div>
-                            <span class="text-zinc-400 block text-xs">Nama Lengkap</span>
-                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedEmployee->nama_lengkap }}</span>
-                        </div>
-                        <div>
-                            <span class="text-zinc-400 block text-xs">Seksi / Departemen</span>
-                            <span class="font-semibold text-zinc-800 dark:text-zinc-200">{{ $selectedEmployee->seksi ?? '-' }}</span>
-                        </div>
-                        <div>
-                            <span class="text-zinc-450 block text-xs">Status Koperasi</span>
+                        <div class="flex-1">
+                            <div class="font-bold text-zinc-900 dark:text-zinc-100">{{ $selectedEmployee->nama_lengkap }}</div>
+                            <div class="text-xs text-zinc-500 mt-1">NPK: <span class="font-mono">{{ $selectedEmployee->npk }}</span></div>
+                            <div class="text-xs text-zinc-500">Seksi: {{ $selectedEmployee->seksi ?? '-' }}</div>
                             @if($selectedEmployee->koperasiMember)
-                                <span class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 dark:text-green-400">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                    Anggota Koperasi
-                                </span>
+                                <div class="mt-2 inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">Terdaftar Koperasi</div>
                             @else
-                                <span class="inline-flex items-center gap-1 text-xs font-semibold text-zinc-500 dark:text-zinc-450">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-                                    Bukan Anggota
-                                </span>
+                                <div class="mt-2 inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">Bukan Anggota</div>
                             @endif
+
+                            <div class="mt-4 pt-3 border-t border-emerald-200 dark:border-emerald-800 flex justify-between gap-4">
+                                <div class="flex-1">
+                                    <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Sisa Tagihan</span>
+                                    <div class="text-sm font-bold text-red-600 dark:text-red-400 mt-0.5">Rp {{ number_format($selectedEmployee->sisa_tagihan, 0, ',', '.') }}</div>
+                                </div>
+                                <div class="flex-1 text-right">
+                                    <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Sisa Plafon</span>
+                                    <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">Rp {{ number_format($selectedEmployee->sisa_plafon, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endif
-            </div>
+            </flux:card>
+        </div>
 
-            <!-- SECTION 2: DETAIL PINJAMAN -->
-            <div class="border-b border-zinc-200 dark:border-zinc-700 pb-6">
-                <flux:heading size="lg" class="mb-4 text-zinc-900 dark:text-white">2. Informasi & Parameter Pinjaman</flux:heading>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Jenis Pinjaman -->
-                    <flux:field>
-                        <flux:label>Jenis Pinjaman</flux:label>
-                        <flux:select wire:model.live="jenis_pinjaman">
-                            <flux:select.option value="qard">Qard Hasan</flux:select.option>
-                            <flux:select.option value="bon">Bon Sementara</flux:select.option>
-                        </flux:select>
-                        <flux:error name="jenis_pinjaman" />
-                    </flux:field>
+        {{-- Kanan: Form Pinjaman --}}
+        <div class="md:col-span-2">
+            <flux:card>
+                <form wire:submit="simpanPinjaman" class="space-y-6">
+                    <flux:heading size="lg" class="mb-4">Informasi Pinjaman</flux:heading>
 
-                    <!-- Tenor Bulan -->
-                    <flux:field>
-                        <flux:label>Tenor Pinjaman (Bulan)</flux:label>
-                        <flux:input 
-                            type="number" 
-                            wire:model="tenor_bulan" 
-                            placeholder="Contoh: 12" 
-                            :disabled="$jenis_pinjaman === 'bon'"
-                        />
-                        <flux:error name="tenor_bulan" />
-                        @if($jenis_pinjaman === 'bon')
-                            <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">Pinjaman Bon Sementara terkunci pada tenor 1 bulan.</p>
-                        @endif
-                    </flux:field>
-
-                    <!-- Nominal Pengajuan -->
-                    <flux:field>
-                        <flux:label>Nominal Pengajuan (Rp)</flux:label>
-                        <flux:input type="number" wire:model="nominal_pengajuan" placeholder="Contoh: 5000000" />
-                        <flux:error name="nominal_pengajuan" />
-                    </flux:field>
-
-                    <!-- Nominal Disetujui (Opsional) -->
-                    <flux:field>
-                        <flux:label>Nominal Disetujui (Rp) <span class="text-zinc-400 text-xs">(Opsional, jika kosong disamakan dengan pengajuan)</span></flux:label>
-                        <flux:input type="number" wire:model="nominal_disetujui" placeholder="Contoh: 5000000" />
-                        <flux:error name="nominal_disetujui" />
-                    </flux:field>
-                </div>
-            </div>
-
-            <!-- SECTION 3: REKENING PENCAIRAN -->
-            <div class="border-b border-zinc-200 dark:border-zinc-700 pb-6">
-                <flux:heading size="lg" class="mb-4 text-zinc-900 dark:text-white">3. Rekening Pencairan</flux:heading>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Nama Bank -->
-                    <flux:field>
-                        <flux:label>Nama Bank</flux:label>
-                        <flux:select wire:model="nama_bank" placeholder="Pilih Bank...">
-                            @foreach($this->bankList as $bank)
-                                <flux:select.option value="{{ $bank }}">{{ $bank }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                        <flux:error name="nama_bank" />
-                    </flux:field>
-
-                    <!-- Nomor Rekening -->
-                    <flux:field>
-                        <flux:label>Nomor Rekening</flux:label>
-                        <flux:input type="text" wire:model="no_rekening" placeholder="Contoh: 7012398412" />
-                        <flux:error name="no_rekening" />
-                    </flux:field>
-
-                    <!-- Nama Pemilik Rekening -->
-                    <flux:field>
-                        <flux:label>Nama Pemilik Rekening</flux:label>
-                        <flux:input type="text" wire:model="nama_pemilik_rekening" placeholder="Sesuai buku tabungan" />
-                        <flux:error name="nama_pemilik_rekening" />
-                    </flux:field>
-                </div>
-            </div>
-
-            <!-- SECTION 4: STATUS & CATATAN -->
-            <div>
-                <flux:heading size="lg" class="mb-4 text-zinc-900 dark:text-white">4. Status & Catatan Tambahan</flux:heading>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Status -->
-                    <flux:field>
-                        <flux:label>Status Pinjaman</flux:label>
-                        <flux:select wire:model.live="status">
-                            <flux:select.option value="draft">Draft</flux:select.option>
-                            <flux:select.option value="diajukan">Diajukan</flux:select.option>
-                            <flux:select.option value="diproses">Diproses</flux:select.option>
-                            <flux:select.option value="ditolak">Ditolak</flux:select.option>
-                            <flux:select.option value="dibatalkan">Dibatalkan</flux:select.option>
-                            <flux:select.option value="berjalan">Berjalan</flux:select.option>
-                            <flux:select.option value="lunas">Lunas</flux:select.option>
-                        </flux:select>
-                        <flux:error name="status" />
-                    </flux:field>
-
-                    <!-- Alasan Penolakan -->
-                    @if($status === 'ditolak')
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <flux:field>
-                            <flux:label>Alasan Penolakan <span class="text-red-500">*</span></flux:label>
-                            <flux:input type="text" wire:model="alasan_penolakan" placeholder="Sebutkan alasan penolakan pinjaman..." />
-                            <flux:error name="alasan_penolakan" />
+                            <flux:label>Jenis Pinjaman</flux:label>
+                            <flux:select wire:model.live="jenis_pinjaman">
+                                <flux:select.option value="qard">Qard Hasan (Bunga 0%)</flux:select.option>
+                                <flux:select.option value="bon">Bon Sementara (Maks 1 Bulan)</flux:select.option>
+                            </flux:select>
+                            <flux:error name="jenis_pinjaman" />
                         </flux:field>
-                    @endif
-
-                    <!-- Catatan -->
-                    <div class="md:col-span-2">
+                        
                         <flux:field>
-                            <flux:label>Catatan Internal / Keterangan</flux:label>
-                            <flux:textarea wire:model="catatan" rows="3" placeholder="Masukkan catatan tambahan jika diperlukan..." />
-                            <flux:error name="catatan" />
+                            <flux:label>Tenor (Bulan)</flux:label>
+                            <flux:input type="number" wire:model.live="tenor_bulan_p" placeholder="Misal: 10" :disabled="$jenis_pinjaman === 'bon'" />
+                            <flux:error name="tenor_bulan_p" />
+                            @if($jenis_pinjaman === 'bon')
+                                <flux:description class="text-amber-600 dark:text-amber-400">Dikunci 1 bulan untuk Bon.</flux:description>
+                            @endif
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Nominal Pengajuan (Rp)</flux:label>
+                            <flux:input type="number" wire:model="nominal_pengajuan_p" placeholder="Misal: 3000000" />
+                            <flux:error name="nominal_pengajuan_p" />
+                        </flux:field>
+                        
+                        <flux:field>
+                            <flux:label>Nominal Disetujui (Rp) <span class="text-zinc-400 font-normal">(opsional)</span></flux:label>
+                            <flux:input type="number" wire:model="nominal_disetujui_p" placeholder="Isi jika berbeda dengan pengajuan" />
+                            <flux:error name="nominal_disetujui_p" />
                         </flux:field>
                     </div>
-                </div>
-            </div>
 
-            <!-- BUTTONS -->
-            <div class="mt-8 flex justify-end gap-3">
-                <flux:button href="/admin/pinjaman" wire:navigate variant="subtle">Batal</flux:button>
-                <flux:button type="submit" variant="primary">Simpan Pinjaman</flux:button>
-            </div>
+                    <flux:separator variant="subtle" />
 
-        </form>
-    </flux:card>
+                    <flux:heading size="sm" class="text-zinc-600 dark:text-zinc-400">Rekening Pencairan Dana</flux:heading>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <flux:field>
+                            <flux:label>Nama Bank</flux:label>
+                            <flux:select wire:model="nama_bank_p" placeholder="Pilih bank...">
+                                @foreach($this->bankList as $bank)
+                                    <flux:select.option value="{{ $bank }}">{{ $bank }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                            <flux:error name="nama_bank_p" />
+                        </flux:field>
+                        <flux:field>
+                            <flux:label>Nomor Rekening</flux:label>
+                            <flux:input type="text" wire:model="no_rekening_p" placeholder="Misal: 1234567890" />
+                            <flux:error name="no_rekening_p" />
+                        </flux:field>
+                        <flux:field>
+                            <flux:label>Atas Nama</flux:label>
+                            <flux:input type="text" wire:model="nama_pemilik_rekening_p" />
+                            <flux:error name="nama_pemilik_rekening_p" />
+                        </flux:field>
+                    </div>
+
+                    <flux:separator variant="subtle" />
+                    <flux:heading size="sm" class="text-zinc-600 dark:text-zinc-400">Status & Catatan Admin</flux:heading>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <flux:field>
+                            <flux:label>Status Pengajuan</flux:label>
+                            <flux:select wire:model.live="status_p">
+                                <flux:select.option value="diajukan">Diajukan</flux:select.option>
+                                <flux:select.option value="diproses">Diproses</flux:select.option>
+                                <flux:select.option value="berjalan">Disetujui / Berjalan</flux:select.option>
+                                <flux:select.option value="ditolak">Ditolak</flux:select.option>
+                            </flux:select>
+                            <flux:error name="status_p" />
+                            @if($status_p === 'berjalan')
+                                <flux:description class="text-emerald-600 dark:text-emerald-400">Memilih status ini akan menganggap dana sudah cair.</flux:description>
+                            @endif
+                        </flux:field>
+                        
+                        <flux:field class="{{ $status_p === 'ditolak' ? 'block' : 'hidden' }}">
+                            <flux:label>Alasan Penolakan</flux:label>
+                            <flux:textarea wire:model="alasan_penolakan_p" rows="2" placeholder="Tulis alasan menolak..." />
+                            <flux:error name="alasan_penolakan_p" />
+                        </flux:field>
+                    </div>
+
+                    <flux:field>
+                        <flux:label>Catatan Internal <span class="text-zinc-400 font-normal">(opsional)</span></flux:label>
+                        <flux:textarea wire:model="catatan_p" rows="2" placeholder="Catatan untuk pengurus koperasi (tidak dilihat anggota)..." />
+                    </flux:field>
+
+                    <div class="flex justify-end pt-4">
+                        <flux:button type="submit" variant="primary" icon="check">Simpan Data Pinjaman</flux:button>
+                    </div>
+                </form>
+            </flux:card>
+        </div>
+    </div>
 </div>

@@ -114,6 +114,12 @@ class DatabaseSeeder extends Seeder
                 'nama_pemilik_rekening' => $employee->nama_lengkap,
             ]);
 
+            $saldo_simpanan_pokok = 50000;
+            $saldo_simpanan_wajib = rand(10, 100) * 500000; // 5M to 50M
+            $saldo_simpanan_sukarela = rand(0, 400) * 500000; // 0 to 200M
+            $saldo_simpanan_lain_lain = rand(0, 200) * 500000; // 0 to 100M
+            $saldo_shu = rand(0, 100) * 500000; // 0 to 50M
+
             KoperasiMember::create([
                 'employee_id' => $employee->id,
                 'member_number' => 'M' . $employee->npk,
@@ -136,6 +142,17 @@ class DatabaseSeeder extends Seeder
                     'orang_tua',
                     'saudara',
                 ]),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Saldo Simpanan (Clean numbers, total max ~400.5M which is < 1B)
+                |--------------------------------------------------------------------------
+                */
+                'saldo_simpanan_pokok' => $saldo_simpanan_pokok,
+                'saldo_simpanan_wajib' => $saldo_simpanan_wajib,
+                'saldo_simpanan_sukarela' => $saldo_simpanan_sukarela,
+                'saldo_simpanan_lain_lain' => $saldo_simpanan_lain_lain,
+                'saldo_shu' => $saldo_shu,
             ]);
 
             /*
