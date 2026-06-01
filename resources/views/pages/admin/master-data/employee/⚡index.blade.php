@@ -116,6 +116,9 @@ new #[Layout('layouts::admin')] class extends Component
             $seksiIdx = array_search('seksi', $header);
             $gradeIdx = array_search('grade_category', $header);
             $statusIdx = array_search('employment_status', $header);
+            $noRekeningIdx = array_search('no_rekening', $header);
+            $namaBankIdx = array_search('nama_bank', $header);
+            $namaPemilikRekeningIdx = array_search('nama_pemilik_rekening', $header);
 
             // Tolerant checks for headers without underscores
             if ($namaIdx === false) $namaIdx = array_search('nama lengkap', $header);
@@ -135,6 +138,23 @@ new #[Layout('layouts::admin')] class extends Component
                 foreach (['status kerja', 'status pekerjaan', 'employment status'] as $alias) {
                     if (($idx = array_search($alias, $header)) !== false) {
                         $statusIdx = $idx;
+                        break;
+                    }
+                }
+            }
+            if ($noRekeningIdx === false) {
+                foreach (['no rekening', 'nomor rekening', 'rekening'] as $alias) {
+                    if (($idx = array_search($alias, $header)) !== false) {
+                        $noRekeningIdx = $idx;
+                        break;
+                    }
+                }
+            }
+            if ($namaBankIdx === false) $namaBankIdx = array_search('nama bank', $header);
+            if ($namaPemilikRekeningIdx === false) {
+                foreach (['nama pemilik rekening', 'pemilik rekening'] as $alias) {
+                    if (($idx = array_search($alias, $header)) !== false) {
+                        $namaPemilikRekeningIdx = $idx;
                         break;
                     }
                 }
@@ -169,6 +189,9 @@ new #[Layout('layouts::admin')] class extends Component
                 $seksi = ($seksiIdx !== false && isset($row[$seksiIdx])) ? trim($row[$seksiIdx]) : null;
                 $grade = ($gradeIdx !== false && isset($row[$gradeIdx])) ? trim($row[$gradeIdx]) : null;
                 $status = ($statusIdx !== false && isset($row[$statusIdx])) ? trim($row[$statusIdx]) : null;
+                $noRekening = ($noRekeningIdx !== false && isset($row[$noRekeningIdx])) ? trim($row[$noRekeningIdx]) : null;
+                $namaBank = ($namaBankIdx !== false && isset($row[$namaBankIdx])) ? trim($row[$namaBankIdx]) : null;
+                $namaPemilikRekening = ($namaPemilikRekeningIdx !== false && isset($row[$namaPemilikRekeningIdx])) ? trim($row[$namaPemilikRekeningIdx]) : null;
 
                 // Validate required fields
                 if (!$npk || !$nama) {
@@ -237,6 +260,9 @@ new #[Layout('layouts::admin')] class extends Component
                     'seksi' => $seksi,
                     'grade_category' => $grade,
                     'employment_status' => $status,
+                    'no_rekening' => $noRekening,
+                    'nama_bank' => $namaBank,
+                    'nama_pemilik_rekening' => $namaPemilikRekening,
                 ]);
 
                 $successCount++;
@@ -425,6 +451,21 @@ new #[Layout('layouts::admin')] class extends Component
                             <td class="p-2.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">employment_status</td>
                             <td class="p-2.5 text-zinc-500">Opsional</td>
                             <td class="p-2.5">tetap atau kontrak</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">no_rekening</td>
+                            <td class="p-2.5 text-zinc-500">Opsional</td>
+                            <td class="p-2.5">Nomor rekening bank</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">nama_bank</td>
+                            <td class="p-2.5 text-zinc-500">Opsional</td>
+                            <td class="p-2.5">Nama bank (Contoh: BCA, Mandiri)</td>
+                        </tr>
+                        <tr>
+                            <td class="p-2.5 font-mono font-bold text-indigo-600 dark:text-indigo-400">nama_pemilik_rekening</td>
+                            <td class="p-2.5 text-zinc-500">Opsional</td>
+                            <td class="p-2.5">Nama sesuai buku tabungan</td>
                         </tr>
                     </tbody>
                 </table>
