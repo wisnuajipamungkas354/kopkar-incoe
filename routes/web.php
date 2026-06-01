@@ -43,6 +43,7 @@ Route::group(['middleware' => ['auth', 'verified']], function () {
         Route::livewire('koperasi-staff/{id}/edit', 'pages::admin.master-data.koperasi-staff.edit');
         Route::livewire('koperasi-management', 'pages::admin.koperasi-management.index');
         Route::livewire('nama-bank', 'pages::admin.nama-bank.index');
+        Route::livewire('kategori-ppob', 'pages::admin.kategori-ppob.index');
         Route::livewire('simpanan-sukarela', 'pages::admin.simpanan-sukarela.index');
         Route::livewire('ppob', 'pages::admin.ppob.index');
         Route::livewire('lazis', 'pages::admin.lazis.index');

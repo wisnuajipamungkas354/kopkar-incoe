@@ -9,6 +9,13 @@ class PengaturanPpobEmployee extends Model
     protected $table = 'pengaturan_ppob_employee';
     protected $guarded = ['id'];
 
+    protected function casts(): array
+    {
+        return [
+            'aktif' => 'boolean',
+        ];
+    }
+
     public function tagihanPayrollEmployee()
     {
         return $this->morphOne(TagihanPayrollEmployee::class, 'tagihanable');

@@ -18,6 +18,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            KategoriPpobSeeder::class,
+            PotonganSimpananWajibSeeder::class,
+        ]);
+
         // Create nama_bank records
         $banks = [
             ['kode_bank' => 'CASH', 'nama_bank' => 'Cash'],

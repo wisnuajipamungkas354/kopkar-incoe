@@ -31,14 +31,23 @@ new class extends Component
         
         get filteredOptions() {
             if (this.search === '') return this.options;
-            return this.options.filter(option => 
-                option.toLowerCase().includes(this.search.toLowerCase())
-            );
+            return this.options.filter(option => {
+                let label = option.label !== undefined ? option.label : option;
+                return String(label).toLowerCase().includes(this.search.toLowerCase());
+            });
         },
         selectOption(option) {
-            this.selected = option;
+            this.selected = option.value !== undefined ? option.value : option;
             this.search = '';
             this.open = false;
+        },
+        get displayText() {
+            if (!this.selected) return '';
+            let found = this.options.find(opt => (opt.value !== undefined ? opt.value : opt) === this.selected);
+            if (found) {
+                return found.label !== undefined ? found.label : found;
+            }
+            return this.selected;
         }
      }" 
      @click.away="open = false">
@@ -52,7 +61,7 @@ new class extends Component
                 @click="open = !open"
                 class="mt-4 w-full flex items-center justify-between rounded-lg border border-zinc-200 dark:border-white/10 bg-white dark:bg-white/10 py-2 px-3 text-sm transition-all focus:ring-[0.1rem]">
             
-            <span x-text="selected ? selected : '{{ $placeholder }}'" 
+            <span x-text="selected ? displayText : '{{ $placeholder }}'" 
                   :class="!selected ? 'text-zinc-400' : 'text-zinc-900 dark:text-white'"></span>
             
             <svg class="h-4 w-4 text-zinc-400 dark:text-white transition-transform" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,8 +91,8 @@ new class extends Component
                         <button type="button" 
                                 @click="selectOption(option)"
                                 class="w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
-                                :class="selected === option ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium' : 'text-zinc-700 dark:text-zinc-200'">
-                            <span x-text="option"></span>
+                                :class="selected === (option.value !== undefined ? option.value : option) ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium' : 'text-zinc-700 dark:text-zinc-200'">
+                            <span x-text="option.label !== undefined ? option.label : option"></span>
                         </button>
                     </li>
                 </template>

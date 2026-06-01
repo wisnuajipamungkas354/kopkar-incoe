@@ -3,6 +3,8 @@
 use App\Models\PengajuanPerubahanPotonganPayroll;
 use App\Models\PotonganPayrollEmployee;
 use App\Models\DetailPayrollEmployee;
+use App\Models\PengaturanPpobEmployee;
+use App\Models\KategoriPpob;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Computed;
@@ -40,6 +42,8 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
 
     // Form PPOB
     public $kategoriPpob    = '';
+    public $searchKategoriPpob = '';
+    public $selectedKategoriPpob = null;
     public $idPelangganPpob = '';
     public $tipePpob        = 'rutin'; // rutin | tambahan
 
@@ -118,24 +122,45 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
     // ─── PPOB Actions ─────────────────────────────────────────────
     public function openTambahPpob($tipe = 'rutin')
     {
-        $this->tipePpob        = $tipe;
-        $this->kategoriPpob    = '';
-        $this->idPelangganPpob = '';
+        $this->tipePpob             = $tipe;
+        $this->kategoriPpob         = '';
+        $this->searchKategoriPpob   = '';
+        $this->selectedKategoriPpob = null;
+        $this->idPelangganPpob      = '';
         Flux::modal('tambah-ppob')->show();
     }
 
     public function submitTambahPpob()
     {
         $this->validate([
-            'kategoriPpob'    => 'required',
-            'idPelangganPpob' => 'required|string|max:50',
+            'kategoriPpob'    => 'required|string',
+            'idPelangganPpob' => 'required|string|max:100',
         ], [
             'kategoriPpob.required'    => 'Kategori PPOB wajib dipilih.',
             'idPelangganPpob.required' => 'ID Pelanggan wajib diisi.',
         ]);
 
-        // TODO: Simpan ke DB PPOB
-        $this->reset(['kategoriPpob', 'idPelangganPpob']);
+        // Cek duplikat: 1 karyawan tidak boleh punya 2 PPOB aktif dengan kategori + nomor pelanggan sama
+        $exists = PengaturanPpobEmployee::where('employee_id', $this->employeeId)
+            ->where('kategori_ppob', $this->kategoriPpob)
+            ->where('nomor_pelanggan', $this->idPelangganPpob)
+            ->where('aktif', true)
+            ->exists();
+
+        if ($exists) {
+            $this->addError('idPelangganPpob', 'PPOB dengan kategori dan nomor pelanggan ini sudah terdaftar.');
+            return;
+        }
+
+        PengaturanPpobEmployee::create([
+            'employee_id'     => $this->employeeId,
+            'kategori_ppob'   => $this->kategoriPpob,
+            'nomor_pelanggan' => $this->idPelangganPpob,
+            'aktif'           => true,
+        ]);
+
+        $this->reset(['kategoriPpob', 'idPelangganPpob', 'searchKategoriPpob', 'selectedKategoriPpob']);
+        unset($this->daftarPpobRutin, $this->daftarPpobTambahan, $this->totalTagihanPpobRutin);
         Flux::modal('tambah-ppob')->close();
         Flux::modal('sukses-ppob')->show();
     }
@@ -149,7 +174,17 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
 
     public function hapusPpob()
     {
-        // TODO: Nonaktifkan PPOB di DB
+        if ($this->ppobHapusId) {
+            $ppob = PengaturanPpobEmployee::where('id', $this->ppobHapusId)
+                ->where('employee_id', $this->employeeId)
+                ->first();
+
+            if ($ppob) {
+                $ppob->update(['aktif' => false]);
+                unset($this->daftarPpobRutin, $this->daftarPpobTambahan, $this->totalTagihanPpobRutin);
+            }
+        }
+
         $this->ppobHapusId   = null;
         $this->ppobHapusNama = '';
         Flux::modal('hapus-ppob')->close();
@@ -216,35 +251,104 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
 
     // ── Computed: PPOB ──────────────────────────────────────────
     #[Computed]
+    public function daftarKategoriPpob()
+    {
+        return KategoriPpob::where('aktif', true)->orderBy('nama')->get();
+    }
+
+    #[Computed]
+    public function availableKategoriPpob()
+    {
+        if (empty($this->searchKategoriPpob)) {
+            return $this->daftarKategoriPpob;
+        }
+
+        $search = strtolower($this->searchKategoriPpob);
+        return $this->daftarKategoriPpob->filter(function($k) use ($search) {
+            return str_contains(strtolower($k->nama), $search) || str_contains(strtolower($k->kode), $search);
+        });
+    }
+
+    public function selectKategoriPpob($kode, $nama)
+    {
+        $this->kategoriPpob = $kode;
+        $this->selectedKategoriPpob = ['kode' => $kode, 'nama' => $nama];
+        $this->searchKategoriPpob = '';
+        $this->resetValidation('kategoriPpob');
+    }
+
+    public function removeSelectedKategoriPpob()
+    {
+        $this->kategoriPpob = '';
+        $this->selectedKategoriPpob = null;
+    }
+
+    #[Computed]
+    public function opsiKategoriPpob()
+    {
+        return $this->daftarKategoriPpob->map(function ($k) {
+            return ['value' => $k->kode, 'label' => $k->nama];
+        })->toArray();
+    }
+
+    #[Computed]
     public function daftarPpobRutin()
     {
-        // Dummy data — ganti dengan query DB saat modul PPOB aktif
-        return collect([
-            (object)['id' => 1, 'kategori' => 'Listrik PLN', 'id_pelanggan' => '1234567890', 'tipe' => 'rutin',    'aktif' => true,  'tanggal_daftar' => '2024-01-10'],
-            (object)['id' => 2, 'kategori' => 'BPJS Kesehatan', 'id_pelanggan' => '0001234567890', 'tipe' => 'rutin', 'aktif' => true, 'tanggal_daftar' => '2024-02-15'],
-            (object)['id' => 3, 'kategori' => 'Wifi IndiHome', 'id_pelanggan' => '111222333', 'tipe' => 'rutin',   'aktif' => false, 'tanggal_daftar' => '2023-11-01'],
-        ])->when($this->search, fn($c) => $c->filter(fn($i) =>
-            stripos($i->kategori, $this->search) !== false ||
-            stripos($i->id_pelanggan, $this->search) !== false
-        ));
+        return PengaturanPpobEmployee::where('employee_id', $this->employeeId)
+            ->when($this->search, fn($q) => $q->where(fn($x) => $x
+                ->where('kategori_ppob', 'like', "%{$this->search}%")
+                ->orWhere('nomor_pelanggan', 'like', "%{$this->search}%")
+            ))
+            ->orderBy('kategori_ppob')
+            ->get()
+            ->map(fn($r) => (object)[
+                'id'            => $r->id,
+                'kategori'      => $this->labelKategoriPpob($r->kategori_ppob),
+                'kategori_raw'  => $r->kategori_ppob,
+                'id_pelanggan'  => $r->nomor_pelanggan,
+                'aktif'         => (bool) $r->aktif,
+                'tanggal_daftar'=> $r->created_at->format('Y-m-d'),
+                'catatan'       => $r->catatan,
+            ]);
     }
 
     #[Computed]
     public function daftarPpobTambahan()
     {
-        // Dummy data — ganti dengan query DB
-        return collect([
-            (object)['id' => 4, 'kategori' => 'Token Listrik', 'id_pelanggan' => '9876543210', 'tipe' => 'tambahan', 'aktif' => true, 'tanggal_daftar' => '2024-05-20'],
-        ])->when($this->search, fn($c) => $c->filter(fn($i) =>
-            stripos($i->kategori, $this->search) !== false ||
-            stripos($i->id_pelanggan, $this->search) !== false
-        ));
+        // Sementara kosong — fitur PPOB Tambahan (non-rutin) menggunakan alur yang sama
+        // tapi tandai dengan catatan khusus. Untuk saat ini menampilkan yang nonaktif.
+        return PengaturanPpobEmployee::where('employee_id', $this->employeeId)
+            ->where('aktif', false)
+            ->when($this->search, fn($q) => $q->where(fn($x) => $x
+                ->where('kategori_ppob', 'like', "%{$this->search}%")
+                ->orWhere('nomor_pelanggan', 'like', "%{$this->search}%")
+            ))
+            ->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(fn($r) => (object)[
+                'id'            => $r->id,
+                'kategori'      => $this->labelKategoriPpob($r->kategori_ppob),
+                'kategori_raw'  => $r->kategori_ppob,
+                'id_pelanggan'  => $r->nomor_pelanggan,
+                'aktif'         => false,
+                'tanggal_daftar'=> $r->created_at->format('Y-m-d'),
+                'catatan'       => $r->catatan,
+            ]);
     }
 
     #[Computed]
     public function totalTagihanPpobRutin()
     {
-        return 0; // TODO: hitung total dari DB
+        return PengaturanPpobEmployee::where('employee_id', $this->employeeId)
+            ->where('aktif', true)
+            ->count();
+    }
+
+    // Helper label kategori PPOB
+    private function labelKategoriPpob(string $k): string
+    {
+        $kategori = $this->daftarKategoriPpob->firstWhere('kode', $k);
+        return $kategori ? $kategori->nama : 'Lain-lain';
     }
 
     // ── Computed: LAZIS ─────────────────────────────────────────
@@ -955,21 +1059,44 @@ new #[Layout('layouts::anggota', ['title' => 'Pembayaran'])] class extends Compo
         <flux:separator variant="subtle" />
 
         <form wire:submit="submitTambahPpob" class="flex flex-col gap-4">
-            <flux:field>
-                <flux:label>Kategori PPOB</flux:label>
-                <flux:select wire:model="kategoriPpob" placeholder="Pilih kategori...">
-                    <flux:select.option value="Listrik PLN">⚡ Listrik PLN</flux:select.option>
-                    <flux:select.option value="Token Listrik">🔌 Token Listrik</flux:select.option>
-                    <flux:select.option value="BPJS Kesehatan">🏥 BPJS Kesehatan</flux:select.option>
-                    <flux:select.option value="BPJS Ketenagakerjaan">🛡️ BPJS Ketenagakerjaan</flux:select.option>
-                    <flux:select.option value="Wifi/Internet">📶 Wifi / Internet</flux:select.option>
-                    <flux:select.option value="Air PDAM">💧 Air PDAM</flux:select.option>
-                    <flux:select.option value="Pulsa/Data">📱 Pulsa / Paket Data</flux:select.option>
-                    <flux:select.option value="Asuransi">🔒 Asuransi</flux:select.option>
-                    <flux:select.option value="Lainnya">📋 Lainnya</flux:select.option>
-                </flux:select>
-                @error('kategoriPpob') <flux:error>{{ $message }}</flux:error> @enderror
-            </flux:field>
+            {{-- Bagian Pencarian & Pemilihan Kategori --}}
+            <div class="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl space-y-4">
+                <flux:heading size="sm">Kategori PPOB</flux:heading>
+                
+                @if(!$selectedKategoriPpob)
+                    <div class="relative">
+                        <flux:input wire:model.live.debounce.300ms="searchKategoriPpob" 
+                                    icon="magnifying-glass" 
+                                    placeholder="Cari kategori (misal: Listrik)..." />
+                        
+                        @if($searchKategoriPpob && count($this->availableKategoriPpob) > 0)
+                            <div class="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                @foreach($this->availableKategoriPpob as $kat)
+                                    <div wire:click="selectKategoriPpob('{{ $kat->kode }}', '{{ $kat->nama }}')" 
+                                         class="px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer">
+                                        <div class="font-medium text-sm text-zinc-800 dark:text-zinc-200">{{ $kat->nama }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif($searchKategoriPpob)
+                            <div class="absolute z-10 w-full mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg p-3 text-center text-sm text-zinc-500">
+                                Kategori tidak ditemukan.
+                            </div>
+                        @endif
+                    </div>
+                    @error('kategoriPpob') <flux:error>{{ $message }}</flux:error> @enderror
+                @else
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div>
+                                <div class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ $selectedKategoriPpob['nama'] }}</div>
+                                <div class="text-xs text-zinc-500">Kode: {{ $selectedKategoriPpob['kode'] }}</div>
+                            </div>
+                        </div>
+                        <flux:button variant="subtle" size="sm" icon="x-mark" wire:click="removeSelectedKategoriPpob" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300" />
+                    </div>
+                @endif
+            </div>
 
             <flux:field>
                 <flux:label>ID Pelanggan</flux:label>

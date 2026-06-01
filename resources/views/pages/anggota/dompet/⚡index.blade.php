@@ -96,7 +96,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
     public function mutasiSukarela()
     {
         $q = MutasiSaldoMember::where('employee_id', $this->employeeId)
-            ->where('jenis_saldo', 'simpanan_sukarela');
+            ->whereIn('jenis_saldo', ['simpanan_sukarela', 'simpanan_lain_lain', 'shu']);
         if ($this->search) $q->where('keterangan', 'like', "%{$this->search}%");
         return $q->latest('id')->paginate(10);
     }

@@ -82,12 +82,13 @@
                 </flux:sidebar.group>
 
                 {{-- Master Data --}}
-                <flux:sidebar.group expandable icon="circle-stack" heading="Master Data" class="grid" :expanded="request()->is('admin/employee*') || request()->is('admin/koperasi-staff*') || request()->is('admin/koperasi-management*') || request()->is('admin/nama-bank') || request()->is('admin/anggota') || request()->is('admin/anggota/*')">
+                <flux:sidebar.group expandable icon="circle-stack" heading="Master Data" class="grid" :expanded="request()->is('admin/employee*') || request()->is('admin/koperasi-staff*') || request()->is('admin/koperasi-management*') || request()->is('admin/nama-bank') || request()->is('admin/anggota') || request()->is('admin/anggota/*') || request()->is('admin/kategori-ppob')">
                     <flux:sidebar.item icon="users" href="{{ url('/admin/anggota') }}" wire:navigate :current="request()->is('admin/anggota') || request()->is('admin/anggota/*')">Anggota</flux:sidebar.item>
                     <flux:sidebar.item icon="briefcase" href="{{ url('/admin/employee') }}" wire:navigate :current="request()->is('admin/employee') || request()->is('admin/employee/*')">Karyawan</flux:sidebar.item>
                     <flux:sidebar.item icon="user-group" href="{{ url('/admin/koperasi-staff') }}" wire:navigate :current="request()->is('admin/koperasi-staff') || request()->is('admin/koperasi-staff/*')">Staff Koperasi</flux:sidebar.item>
                     <flux:sidebar.item icon="identification" href="{{ url('/admin/koperasi-management') }}" wire:navigate :current="request()->is('admin/koperasi-management') || request()->is('admin/koperasi-management/*')">Pengurus Koperasi</flux:sidebar.item>
                     <flux:sidebar.item icon="credit-card" href="{{ url('/admin/nama-bank') }}" wire:navigate :current="request()->is('admin/nama-bank')">Nama Bank</flux:sidebar.item>
+                    <flux:sidebar.item icon="bolt" href="{{ url('/admin/kategori-ppob') }}" wire:navigate :current="request()->is('admin/kategori-ppob')">Kategori PPOB</flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
             <flux:sidebar.spacer />
