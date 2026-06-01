@@ -27,8 +27,9 @@ new #[Layout('layouts::anggota')] class extends Component
         Carbon::setLocale('id');
         $user = auth('web')->user();
         if (!$user || !$user->userable) return;
+        
         $this->employeeId = $user->userable->id;
-        $member = KoperasiMember::find($this->employeeId);
+        $member = KoperasiMember::where('employee_id', $this->employeeId)->first();
 
         $this->saldoPokok    = $member->saldo_simpanan_pokok;
         $this->saldoWajib    = $member->saldo_simpanan_wajib;

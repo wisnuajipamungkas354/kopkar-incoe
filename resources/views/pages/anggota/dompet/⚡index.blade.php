@@ -66,7 +66,7 @@ new #[Layout('layouts::anggota', ['title' => 'Dompet'])] class extends Component
 
     public function refreshBalances()
     {
-        $member = KoperasiMember::find($this->employeeId);
+        $member = KoperasiMember::where('employee_id', $this->employeeId)->first();
 
         $this->saldoSukarela = $member->saldo_simpanan_sukarela;
         $this->saldoLain     = $member->saldo_simpanan_lain_lain;
